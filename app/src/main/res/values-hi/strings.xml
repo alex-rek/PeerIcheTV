@@ -306,4 +306,17 @@
     <string name="update_checking">अपडेट जाँचे जा रहे हैं…</string>
     <string name="update_no_new_version">PeerIcheTV नवीनतम संस्करण पर है।</string>
     <string name="mini_section_rail">अनुभागों की मिनी पट्टी दिखाएँ</string>
+    <string name="nav_playlists">प्लेलिस्ट</string>
+    <string name="watch_later">बाद में देखें</string>
+    <string name="watch_later_add">प्लेलिस्ट \"बाद में देखें\" में</string>
+    <string name="watch_later_remove">प्लेलिस्ट \"बाद में देखें\" से हटाएं</string>
+    <string name="watch_later_empty">अभी कोई वीडियो नहीं है। वीडियो मेनू या प्लेयर से जोड़ें।</string>
+    <string name="watch_later_count">वीडियो: %1$d</string>
+    <string name="watch_later_status_local">इस डिवाइस पर सहेजा गया</string>
+    <string name="watch_later_status_syncing">सिंक हो रहा है…</string>
+    <string name="watch_later_status_synced">सर्वर से सिंक हो गया</string>
+    <string name="watch_later_status_pending">सर्वर उपलब्ध होने पर बदलाव भेजे जाएंगे</string>
+    <string name="watch_later_status_partial">कुछ वीडियो सर्वर में नहीं जोड़े जा सके</string>
+    <string name="watch_later_status_sign_in">सिंक करने के लिए फिर से साइन इन करें</string>
+    <string name="player_control_caption_watch_later">बाद में</string>
 </resources>

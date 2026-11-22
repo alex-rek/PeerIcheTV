@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
@@ -49,8 +50,8 @@ internal fun HomeSideMenu(m: HomeModel, ui: HomeUiState, actions: HomeActions, m
         ) {
           Column(Modifier.fillMaxSize().focusGroup().verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(77.dp))
-            listOf("home" to R.string.nav_home, "popular" to R.string.nav_popular, "recommendations" to R.string.nav_recommendations, "live" to R.string.nav_live, "subscriptions" to R.string.nav_subscriptions, "channels" to R.string.nav_channels, "instances" to R.string.nav_instances, "history" to R.string.nav_history, "favorites" to R.string.nav_favorites, "settings" to R.string.nav_settings).filter { (key, _) -> key == "home" || key == "settings" || key !in m.hiddenSections }.forEach { (key, label) ->
-                val isSelected = if (key == "settings") (m.tab == "settings" || ui.settingsOverlay) else m.tab == key
+            listOf("home" to R.string.nav_home, "popular" to R.string.nav_popular, "recommendations" to R.string.nav_recommendations, "live" to R.string.nav_live, "subscriptions" to R.string.nav_subscriptions, "channels" to R.string.nav_channels, "instances" to R.string.nav_instances, "playlists" to R.string.nav_playlists, "history" to R.string.nav_history, "favorites" to R.string.nav_favorites, "settings" to R.string.nav_settings).filter { (key, _) -> key == "home" || key == "settings" || key !in m.hiddenSections }.forEach { (key, label) ->
+                val isSelected = if (key == "settings") (m.tab == "settings" || ui.settingsOverlay) else m.tab == key || (key == "playlists" && m.tab == "watch_later")
                 val selectedStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = if (isSelected) 20.sp else 16.sp, fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Normal)
                 var navFocused by remember(key) { mutableStateOf(false) }
                 val itemFocusRequester = remember(key) { FocusRequester() }
@@ -63,6 +64,7 @@ internal fun HomeSideMenu(m: HomeModel, ui: HomeUiState, actions: HomeActions, m
                     "channels" -> Icons.Filled.VideoLibrary
                     "recommendations" -> Icons.Filled.Recommend
                     "instances" -> Icons.Filled.Public
+                    "playlists" -> Icons.AutoMirrored.Filled.PlaylistPlay
                     "history" -> Icons.Filled.History
                     "favorites" -> Icons.Filled.Favorite
                     else -> Icons.Filled.Settings
@@ -88,11 +90,11 @@ internal fun HomeSideMenu(m: HomeModel, ui: HomeUiState, actions: HomeActions, m
           }
         }
     } else if (m.miniSectionRailEnabled) {
-        val railItems = listOf("home" to R.string.nav_home, "popular" to R.string.nav_popular, "recommendations" to R.string.nav_recommendations, "live" to R.string.nav_live, "subscriptions" to R.string.nav_subscriptions, "channels" to R.string.nav_channels, "instances" to R.string.nav_instances, "history" to R.string.nav_history, "favorites" to R.string.nav_favorites, "settings" to R.string.nav_settings).filter { (key, _) -> key == "home" || key == "settings" || key !in m.hiddenSections }
+        val railItems = listOf("home" to R.string.nav_home, "popular" to R.string.nav_popular, "recommendations" to R.string.nav_recommendations, "live" to R.string.nav_live, "subscriptions" to R.string.nav_subscriptions, "channels" to R.string.nav_channels, "instances" to R.string.nav_instances, "playlists" to R.string.nav_playlists, "history" to R.string.nav_history, "favorites" to R.string.nav_favorites, "settings" to R.string.nav_settings).filter { (key, _) -> key == "home" || key == "settings" || key !in m.hiddenSections }
         Surface(Modifier.width(60.dp).fillMaxHeight(), color = MaterialTheme.colorScheme.surfaceVariant) {
             Column(Modifier.fillMaxSize().padding(top = 77.dp).focusGroup(), verticalArrangement = Arrangement.spacedBy(2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 railItems.forEach { (key, label) ->
-                    val isSelected = if (key == "settings") (m.tab == "settings" || ui.settingsOverlay) else m.tab == key
+                    val isSelected = if (key == "settings") (m.tab == "settings" || ui.settingsOverlay) else m.tab == key || (key == "playlists" && m.tab == "watch_later")
                     val icon = when (key) {
                         "home" -> Icons.Filled.Home
                         "popular" -> Icons.Filled.Whatshot
@@ -101,6 +103,7 @@ internal fun HomeSideMenu(m: HomeModel, ui: HomeUiState, actions: HomeActions, m
                         "channels" -> Icons.Filled.VideoLibrary
                         "recommendations" -> Icons.Filled.Recommend
                         "instances" -> Icons.Filled.Public
+                        "playlists" -> Icons.AutoMirrored.Filled.PlaylistPlay
                         "history" -> Icons.Filled.History
                         "favorites" -> Icons.Filled.Favorite
                         else -> Icons.Filled.Settings

@@ -176,4 +176,17 @@
     <string name="mini_section_rail">Show mini section rail</string>
     <string name="player_default_resolution">Default resolution</string>
     <string name="player_resolution_auto">Auto (fit screen)</string>
+    <string name="nav_playlists">Playlists</string>
+    <string name="watch_later">Watch later</string>
+    <string name="watch_later_add">To \"Watch later\" playlist</string>
+    <string name="watch_later_remove">Remove from \"Watch later\" playlist</string>
+    <string name="watch_later_empty">No videos yet. Add one from the video menu or the player.</string>
+    <string name="watch_later_count">Videos: %1$d</string>
+    <string name="watch_later_status_local">Saved on this device</string>
+    <string name="watch_later_status_syncing">Syncing…</string>
+    <string name="watch_later_status_synced">Synced with the server</string>
+    <string name="watch_later_status_pending">Changes will be sent when the server is available</string>
+    <string name="watch_later_status_partial">Some videos could not be added to the server</string>
+    <string name="watch_later_status_sign_in">Sign in again to sync</string>
+    <string name="player_control_caption_watch_later">Later</string>
 </resources>

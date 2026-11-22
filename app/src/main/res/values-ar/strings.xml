@@ -306,4 +306,17 @@
     <string name="update_checking">جارٍ التحقق من التحديثات…</string>
     <string name="update_no_new_version">PeerIcheTV محدّث.</string>
     <string name="mini_section_rail">عرض شريط الأقسام المصغّر</string>
+    <string name="nav_playlists">قوائم التشغيل</string>
+    <string name="watch_later">المشاهدة لاحقًا</string>
+    <string name="watch_later_add">إلى قائمة «المشاهدة لاحقًا»</string>
+    <string name="watch_later_remove">إزالة من قائمة «المشاهدة لاحقًا»</string>
+    <string name="watch_later_empty">لا توجد مقاطع بعد. أضفها من قائمة الفيديو أو من المشغل.</string>
+    <string name="watch_later_count">مقاطع الفيديو: %1$d</string>
+    <string name="watch_later_status_local">محفوظ على هذا الجهاز</string>
+    <string name="watch_later_status_syncing">جارٍ المزامنة…</string>
+    <string name="watch_later_status_synced">تمت المزامنة مع الخادم</string>
+    <string name="watch_later_status_pending">سيتم إرسال التغييرات عند توفر الخادم</string>
+    <string name="watch_later_status_partial">تعذرت إضافة بعض المقاطع إلى الخادم</string>
+    <string name="watch_later_status_sign_in">سجّل الدخول مجددًا للمزامنة</string>
+    <string name="player_control_caption_watch_later">لاحقًا</string>
 </resources>

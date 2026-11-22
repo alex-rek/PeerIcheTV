@@ -35,6 +35,7 @@ internal class HomeUiState {
     var searchResultFocusPending by mutableStateOf(false)
     var returnSearchFocusPending by mutableStateOf(false)
     var searchButtonFocused by mutableStateOf(false)
+    var accountButtonFocused by mutableStateOf(false)
     var menuExpanded by mutableStateOf(false)
     var headerHidden by mutableStateOf(false)
     var settingsOverlay by mutableStateOf(false)

@@ -11,5 +11,6 @@ class PeerTubeApplication : Application() {
         // reliably run its manifest initializer before the first translation request.
         runCatching { MlKitContext.initializeIfNeeded(this) }
             .onFailure { Log.e("PeerIcheTV", "Could not initialize ML Kit", it) }
+        WatchLater.start(this)
     }
 }

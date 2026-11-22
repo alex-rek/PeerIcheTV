@@ -381,18 +381,18 @@ internal fun SettingsDashboard(
                                 model.homePageConfigStatus?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                 val launchLabel = stringResource(when (model.launchTab) {
                                     "popular" -> R.string.nav_popular; "live" -> R.string.nav_live; "subscriptions" -> R.string.nav_subscriptions
-                                    "channels" -> R.string.nav_channels; "recommendations" -> R.string.nav_recommendations; "instances" -> R.string.nav_instances
+                                    "channels" -> R.string.nav_channels; "recommendations" -> R.string.nav_recommendations; "instances" -> R.string.nav_instances; "playlists" -> R.string.nav_playlists
                                     "history" -> R.string.nav_history; "favorites" -> R.string.nav_favorites; else -> R.string.nav_home
                                 })
                                 SettingsChoice(stringResource(R.string.startup_section), launchLabel, listOf(
                                     "home" to stringResource(R.string.nav_home), "popular" to stringResource(R.string.nav_popular),
                                     "live" to stringResource(R.string.nav_live), "subscriptions" to stringResource(R.string.nav_subscriptions),
                                     "channels" to stringResource(R.string.nav_channels), "recommendations" to stringResource(R.string.nav_recommendations),
-                                    "instances" to stringResource(R.string.nav_instances), "history" to stringResource(R.string.nav_history),
+                                    "instances" to stringResource(R.string.nav_instances), "playlists" to stringResource(R.string.nav_playlists), "history" to stringResource(R.string.nav_history),
                                     "favorites" to stringResource(R.string.nav_favorites)
                                 )) { model.updateLaunchTab(it) }
                                 Text(stringResource(R.string.settings_sections), style = MaterialTheme.typography.titleMedium)
-                                listOf("home" to R.string.nav_home, "popular" to R.string.nav_popular, "recommendations" to R.string.nav_recommendations, "live" to R.string.nav_live, "subscriptions" to R.string.nav_subscriptions, "channels" to R.string.nav_channels, "instances" to R.string.nav_instances, "history" to R.string.nav_history, "favorites" to R.string.nav_favorites).forEach { (key, label) ->
+                                listOf("home" to R.string.nav_home, "popular" to R.string.nav_popular, "recommendations" to R.string.nav_recommendations, "live" to R.string.nav_live, "subscriptions" to R.string.nav_subscriptions, "channels" to R.string.nav_channels, "instances" to R.string.nav_instances, "playlists" to R.string.nav_playlists, "history" to R.string.nav_history, "favorites" to R.string.nav_favorites).forEach { (key, label) ->
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         Text(stringResource(label), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                                         Checkbox(checked = key !in model.hiddenSections, enabled = key != "home" && key != model.launchTab, onCheckedChange = { model.toggleSection(key, it) })

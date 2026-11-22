@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.WatchLater
+import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -358,6 +360,7 @@ private fun isValidPeerTubeServer(value: String): Boolean {
             ?: runCatching { java.net.URI(server).host.orEmpty() }.getOrDefault("")
     }.removePrefix("https://").removePrefix("http://").trimEnd('/')
     var isFavorite by remember(uuid) { mutableStateOf(readFavoriteVideos(context).any { it.uuid == uuid }) }
+    val watchLaterState by WatchLater.state.collectAsState()
     var isSubscribed by remember(channelName, channelHost, server) {
         mutableStateOf(readSavedSubscriptions(context).any { "${it.name}@${it.host}".equals("${channelName.orEmpty()}@$subscriptionHost", ignoreCase = true) })
     }
@@ -371,7 +374,7 @@ private fun isValidPeerTubeServer(value: String): Boolean {
         addAll(listOf(3, 4, 0, 1, 2))
         if (subtitles.isNotEmpty()) add(5)
         if (!channelName.isNullOrBlank()) add(6)
-        if (!uuid.isNullOrBlank()) add(7)
+        if (!uuid.isNullOrBlank()) { add(7); add(11) }
         add(8)
         if (!uuid.isNullOrBlank()) add(9)
         if (!uuid.isNullOrBlank()) add(10)
@@ -649,6 +652,7 @@ private fun isValidPeerTubeServer(value: String): Boolean {
             5 -> { subtitlePanelOpen = !subtitlePanelOpen; subtitlePanelRow = 0 }
             6 -> toggleSubscription()
             7 -> toggleFavorite()
+            11 -> WatchLater.toggle(context, favoriteVideo)
             8 -> {
                 qualityPanelOpen = !qualityPanelOpen
                 if (qualityPanelOpen) {
@@ -1188,6 +1192,7 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                     if (subtitles.isNotEmpty()) PlayerIconControl(Icons.Filled.ClosedCaption, "Subtitles", stringResource(R.string.player_control_caption_subtitles), selected = focusedControlIndex == controlActions.indexOf(5), modifier = Modifier.weight(1f)) { activateControl(5) }
                     if (!channelName.isNullOrBlank()) PlayerIconControl(if (isSubscribed) Icons.Filled.Check else Icons.Filled.PersonAdd, "Subscribe", stringResource(R.string.player_control_caption_subscribe), selected = focusedControlIndex == controlActions.indexOf(6), modifier = Modifier.weight(1f)) { activateControl(6) }
                     if (!uuid.isNullOrBlank()) PlayerIconControl(if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, "Favorite", stringResource(R.string.player_control_caption_favorite), selected = focusedControlIndex == controlActions.indexOf(7), modifier = Modifier.weight(1f)) { activateControl(7) }
+                    if (!uuid.isNullOrBlank()) PlayerIconControl(if (uuid in watchLaterState) Icons.Filled.WatchLater else Icons.Outlined.WatchLater, "Watch later", stringResource(R.string.player_control_caption_watch_later), selected = focusedControlIndex == controlActions.indexOf(11), modifier = Modifier.weight(1f)) { activateControl(11) }
                     PlayerIconControl(Icons.Filled.HighQuality, "Playback quality settings", stringResource(R.string.player_control_caption_quality), selected = focusedControlIndex == controlActions.indexOf(8), modifier = Modifier.weight(1f)) { activateControl(8) }
                     if (!uuid.isNullOrBlank()) PlayerIconControl(Icons.Filled.Info, "Video information", stringResource(R.string.player_control_caption_info), selected = focusedControlIndex == controlActions.indexOf(9), modifier = Modifier.weight(1f)) { activateControl(9) }
                     if (!uuid.isNullOrBlank()) PlayerIconControl(Icons.Outlined.ChatBubbleOutline, "Comments", stringResource(R.string.player_control_caption_comments), selected = focusedControlIndex == controlActions.indexOf(10), modifier = Modifier.weight(1f)) { activateControl(10) }

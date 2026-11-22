@@ -85,6 +85,10 @@ internal fun validSubscriptionHandle(value: String): String {
     return "$name@${URI(origin).authority}"
 }
 
+private const val WATCH_LATER_PLAYLIST_TYPE = 2
+private const val PLAYLIST_PAGE_SIZE = 50
+private const val MAX_PLAYLIST_PAGES = 200
+
 private class PeerTubeAccountTransport(private val client: () -> OkHttpClient) {
     private val gson = Gson()
     private fun request(server: String, path: String, token: String? = null) = Request.Builder()
@@ -193,6 +197,36 @@ private class PeerTubeAccountTransport(private val client: () -> OkHttpClient) {
                 .header("Accept", "application/json").header("Authorization", "Bearer $token").delete().build()
         }
         execute(request, empty = true)
+    }
+    suspend fun watchLaterPlaylistId(server: String, token: String, username: String): Long {
+        val me = execute(request(server, "/api/v1/users/me", token).build())
+        val special = runCatching {
+            me.getAsJsonArray("specialPlaylists")?.map { it.asJsonObject }?.firstOrNull { it.get("type").asInt == WATCH_LATER_PLAYLIST_TYPE }?.get("id")?.asLong
+        }.getOrNull()
+        if (special != null && special > 0) return special
+        val owned = execute(request(server, "/api/v1/accounts/${android.net.Uri.encode(username)}/video-playlists?playlistType=$WATCH_LATER_PLAYLIST_TYPE&start=0&count=5", token).build())
+        return runCatching {
+            owned.getAsJsonArray("data").map { it.asJsonObject }.first { it.getAsJsonObject("type").get("id").asInt == WATCH_LATER_PLAYLIST_TYPE }.get("id").asLong
+        }.getOrNull()?.takeIf { it > 0 }
+            ?: throw AccountAuthFailure("invalid_response")
+    }
+    suspend fun playlistElements(server: String, token: String, playlistId: Long, start: Int): JsonObject =
+        execute(request(server, "/api/v1/video-playlists/$playlistId/videos?start=${start.coerceAtLeast(0)}&count=$PLAYLIST_PAGE_SIZE", token).build())
+    suspend fun addPlaylistVideo(server: String, token: String, playlistId: Long, uuid: String): Long {
+        if (!uuid.matches(Regex("[A-Za-z0-9_-]{1,128}"))) throw AccountAuthFailure("invalid_response")
+        val body = JsonObject().apply { addProperty("videoId", uuid) }
+        val json = execute(request(server, "/api/v1/video-playlists/$playlistId/videos", token)
+            .header("Content-Type", "application/json")
+            .post(body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build())
+        return runCatching { json.getAsJsonObject("videoPlaylistElement").get("id").asLong }.getOrNull()?.takeIf { it > 0 }
+            ?: throw AccountAuthFailure("invalid_response")
+    }
+    suspend fun removePlaylistElement(server: String, token: String, playlistId: Long, elementId: Long) {
+        execute(request(server, "/api/v1/video-playlists/$playlistId/videos/$elementId", token).delete().build(), empty = true)
+    }
+    /** Makes a video from another instance known to the account's server by searching for its URL. */
+    suspend fun importRemoteVideo(server: String, token: String, videoUrl: String) {
+        execute(request(server, "/api/v1/search/videos?search=${android.net.Uri.encode(videoUrl)}&count=1", token).build())
     }
     suspend fun revoke(server: String, token: String) { execute(request(server, "/api/v1/users/revoke-token", token).post(FormBody.Builder().build()).build(), true) }
 }
@@ -328,6 +362,51 @@ internal class PeerTubeAccountManager(context: Context) {
     suspend fun subscriptionVideos(id: String, start: Int): JsonObject = withAccountToken(id) { api.subscriptionVideos(it.server, it.access, start) }
     suspend fun setSubscription(id: String, handle: String, subscribed: Boolean) = withAccountToken(id) {
         api.setSubscription(it.server, it.access, handle, subscribed); Unit
+    }
+    suspend fun watchLaterPlaylistId(id: String): Long = withAccountToken(id) { api.watchLaterPlaylistId(it.server, it.access, it.profile.username) }
+    /** The whole list, or a failure: a partial list would look like videos removed on the server. */
+    suspend fun watchLaterItems(id: String, playlistId: Long): List<RemoteWatchLaterItem> {
+        val items = ArrayList<RemoteWatchLaterItem>()
+        var start = 0
+        repeat(MAX_PLAYLIST_PAGES) {
+            val (server, page) = withAccountToken(id) { it.server to api.playlistElements(it.server, it.access, playlistId, start) }
+            val elements = page.getAsJsonArray("data") ?: throw AccountAuthFailure("invalid_response")
+            elements.forEach { element -> parseWatchLaterElement(element.asJsonObject, server)?.let(items::add) }
+            start += elements.size()
+            val total = runCatching { page.get("total").asInt }.getOrDefault(start)
+            if (elements.size() == 0 || start >= total) return items
+        }
+        throw AccountAuthFailure("invalid_response")
+    }
+    private fun parseWatchLaterElement(element: JsonObject, server: String): RemoteWatchLaterItem? {
+        val elementId = runCatching { element.get("id").asLong }.getOrNull()?.takeIf { it > 0 } ?: throw AccountAuthFailure("invalid_response")
+        // Deleted or private videos come back without a video object; they stay on the server untouched.
+        val json = element.get("video")?.takeIf { it.isJsonObject } ?: return null
+        val video = runCatching { PeerTubeGson.instance.fromJson(json, Video::class.java) }.getOrNull()?.takeIf { !it.uuid.isNullOrBlank() } ?: return null
+        val host = video.host?.takeIf(String::isNotBlank) ?: video.channel?.host ?: video.account?.host ?: URI(server).authority
+        return RemoteWatchLaterItem(video.copy(host = host), elementId)
+    }
+    /** Returns null when the server cannot take this video, so it is kept on this device only. */
+    suspend fun addToPlaylist(id: String, playlistId: Long, video: Video): Long? = withAccountToken(id) { session ->
+        fun refused(failure: AccountAuthFailure) = failure.status == 400 || failure.status == 403 || failure.status == 404 || failure.status == 409
+        try {
+            api.addPlaylistVideo(session.server, session.access, playlistId, video.uuid)
+        } catch (failure: AccountAuthFailure) {
+            if (!refused(failure)) throw failure
+            val origin = video.sourceServer(session.server).trimEnd('/')
+            if (failure.status != 404 || origin == session.server) return@withAccountToken null
+            try {
+                api.importRemoteVideo(session.server, session.access, "$origin/videos/watch/${video.uuid}")
+                api.addPlaylistVideo(session.server, session.access, playlistId, video.uuid)
+            } catch (retry: AccountAuthFailure) {
+                if (refused(retry)) null else throw retry
+            }
+        }
+    }
+    /** A 404 means the entry is already gone, which is what was asked for. */
+    suspend fun removeFromPlaylist(id: String, playlistId: Long, elementId: Long) = withAccountToken(id) { session ->
+        try { api.removePlaylistElement(session.server, session.access, playlistId, elementId) }
+        catch (failure: AccountAuthFailure) { if (failure.status != 404) throw failure }
     }
     private suspend fun refresh(session: AccountSession): AccountSession {
         val tokens = try { api.refresh(session.server, session.client, session.refresh) } catch (error: AccountAuthFailure) {

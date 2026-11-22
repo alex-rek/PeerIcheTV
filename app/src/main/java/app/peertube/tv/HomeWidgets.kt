@@ -158,7 +158,7 @@ internal fun currentLocale(): Locale =
                             }
                         }
                     }
-                    if (contextMenu) VideoContextMenu(video.name, isSubscribed(video), isFavorite(video), dismissContextMenu, { dismissContextMenu(); onOpen(video) }, { dismissContextMenu(); onSubscription(video) }, { dismissContextMenu(); onFavorite(video) }, { dismissContextMenu(); onChannel(video) }, { dismissContextMenu(); onExcludeRecommendation(video) }, { dismissContextMenu(); onMarkWatched(video) })
+                    if (contextMenu) VideoContextMenu(video, isSubscribed(video), isFavorite(video), dismissContextMenu, { dismissContextMenu(); onOpen(video) }, { dismissContextMenu(); onSubscription(video) }, { dismissContextMenu(); onFavorite(video) }, { dismissContextMenu(); onChannel(video) }, { dismissContextMenu(); onExcludeRecommendation(video) }, { dismissContextMenu(); onMarkWatched(video) })
                 }
             }
         }

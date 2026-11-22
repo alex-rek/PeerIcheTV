@@ -306,4 +306,17 @@
     <string name="update_checking">アップデートを確認中…</string>
     <string name="update_no_new_version">PeerIcheTV は最新です。</string>
     <string name="mini_section_rail">セクションのミニバーを表示</string>
+    <string name="nav_playlists">プレイリスト</string>
+    <string name="watch_later">後で見る</string>
+    <string name="watch_later_add">プレイリスト「後で見る」に追加</string>
+    <string name="watch_later_remove">プレイリスト「後で見る」から削除</string>
+    <string name="watch_later_empty">動画はまだありません。動画メニューまたはプレーヤーから追加できます。</string>
+    <string name="watch_later_count">動画: %1$d</string>
+    <string name="watch_later_status_local">このデバイスに保存済み</string>
+    <string name="watch_later_status_syncing">同期中…</string>
+    <string name="watch_later_status_synced">サーバーと同期済み</string>
+    <string name="watch_later_status_pending">サーバーに接続できたら変更を送信します</string>
+    <string name="watch_later_status_partial">一部の動画をサーバーに追加できませんでした</string>
+    <string name="watch_later_status_sign_in">同期するには再度ログインしてください</string>
+    <string name="player_control_caption_watch_later">後で見る</string>
 </resources>
