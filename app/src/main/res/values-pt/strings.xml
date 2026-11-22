@@ -306,4 +306,17 @@
     <string name="update_checking">Verificando atualizações…</string>
     <string name="update_no_new_version">O PeerIcheTV está atualizado.</string>
     <string name="mini_section_rail">Mostrar minibarra de seções</string>
+    <string name="nav_playlists">Playlists</string>
+    <string name="watch_later">Ver mais tarde</string>
+    <string name="watch_later_add">Na playlist «Ver mais tarde»</string>
+    <string name="watch_later_remove">Remover da playlist «Ver mais tarde»</string>
+    <string name="watch_later_empty">Ainda não há vídeos. Adicione pelo menu do vídeo ou pelo player.</string>
+    <string name="watch_later_count">Vídeos: %1$d</string>
+    <string name="watch_later_status_local">Salvo neste dispositivo</string>
+    <string name="watch_later_status_syncing">Sincronizando…</string>
+    <string name="watch_later_status_synced">Sincronizado com o servidor</string>
+    <string name="watch_later_status_pending">As alterações serão enviadas quando o servidor estiver disponível</string>
+    <string name="watch_later_status_partial">Alguns vídeos não puderam ser adicionados ao servidor</string>
+    <string name="watch_later_status_sign_in">Entre novamente para sincronizar</string>
+    <string name="player_control_caption_watch_later">Mais tarde</string>
 </resources>

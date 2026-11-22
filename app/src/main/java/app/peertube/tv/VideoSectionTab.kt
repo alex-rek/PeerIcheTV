@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ColumnScope.VideoSectionTab(m: HomeModel, ui: HomeUiState, actions: HomeActions) {
+    val watchLater by WatchLater.state.collectAsState()
     if (m.tab == "subscriptions") {
         if (!ui.headerHidden) {
             Text(stringResource(R.string.nav_subscriptions), style = MaterialTheme.typography.headlineSmall)
@@ -29,6 +30,8 @@ internal fun ColumnScope.VideoSectionTab(m: HomeModel, ui: HomeUiState, actions:
         else if (m.subscriptionVideos.isEmpty() && m.error == null) Text(stringResource(R.string.subscriptions_no_videos), modifier = Modifier.padding(16.dp))
     } else if (m.tab == "channel") {
         if (!ui.headerHidden) Text(m.activeChannelTitle, style = MaterialTheme.typography.headlineSmall)
+    } else if (m.tab == "watch_later") {
+        WatchLaterHeader(watchLater, ui)
     } else if (m.tab == "live") {
         if (!ui.headerHidden) Text(stringResource(R.string.nav_live), style = MaterialTheme.typography.headlineSmall)
         if (m.isLoadingLive) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 8.dp))
@@ -50,7 +53,7 @@ internal fun ColumnScope.VideoSectionTab(m: HomeModel, ui: HomeUiState, actions:
             if (m.isLoadingRecommendations) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 8.dp))
         }
     }
-    val rows = m.sortVideos(when(m.tab) { "popular" -> m.popularVideos; "history" -> m.history.toList(); "favorites" -> m.favorites.toList(); "recommendations" -> m.recommendations; "subscriptions" -> m.subscriptionVideos; "live" -> m.liveVideos; "channel" -> m.channelVideos; else -> m.videos })
+    val rows = m.sortVideos(when(m.tab) { "popular" -> m.popularVideos; "history" -> m.history.toList(); "favorites" -> m.favorites.toList(); "watch_later" -> watchLater.videos; "recommendations" -> m.recommendations; "subscriptions" -> m.subscriptionVideos; "live" -> m.liveVideos; "channel" -> m.channelVideos; else -> m.videos })
     val savedSectionVideoId = ui.lastFocusedCardBySection[m.tab]
     m.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     if (m.tab == "recommendations" && rows.isEmpty() && !m.isLoadingRecommendations && m.error == null) Text(stringResource(R.string.recommendations_empty), modifier = Modifier.padding(16.dp))

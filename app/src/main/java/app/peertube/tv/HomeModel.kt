@@ -313,7 +313,7 @@ class HomeModel : ViewModel() {
         tickerSpeed = (prefs?.getFloat("tickerSpeed", 1f) ?: 1f).coerceIn(1f, 8f)
         contextMenuHoldSeconds = (prefs?.getFloat("contextMenuHoldSeconds", 1f) ?: 1f).coerceIn(1f, 5f)
         seekStepSeconds = (prefs?.getInt("seekStepSeconds", 10) ?: 10).takeIf { it in listOf(5, 10, 15, 30, 60) } ?: 10
-        launchTab = prefs?.getString("launchTab", "home")?.takeIf { it in listOf("home", "popular", "live", "subscriptions", "channels", "recommendations", "instances", "history", "favorites") } ?: "home"
+        launchTab = prefs?.getString("launchTab", "home")?.takeIf { it in listOf("home", "popular", "live", "subscriptions", "channels", "recommendations", "instances", "playlists", "history", "favorites") } ?: "home"
         hiddenSections = runCatching { PeerTubeGson.instance.fromJson<List<String>>(prefs?.getString("hiddenSections", "[]"), object : TypeToken<List<String>>() {}.type)?.toSet() ?: emptySet() }.getOrDefault(emptySet())
         val savedTheme = prefs?.getString("selectedTheme", PeerIcheThemes.GRAPHITE)
         selectedTheme = PeerIcheThemes.migrateId(savedTheme)

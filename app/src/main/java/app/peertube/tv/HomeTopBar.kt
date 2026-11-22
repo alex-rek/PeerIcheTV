@@ -23,6 +23,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import coil3.compose.AsyncImage
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -32,7 +37,15 @@ internal fun BoxScope.HomeTopBar(m: HomeModel, ui: HomeUiState, search: SearchUi
     Row(
         Modifier.align(Alignment.TopStart).offset(y = topBarOffset).graphicsLayer { alpha = if (ui.headerHidden) 0f else 1f }
             .padding(start = if (ui.menuExpanded) 226.dp else if (m.miniSectionRailEnabled) 80.dp else 20.dp, end = 20.dp, top = 4.dp).fillMaxWidth().zIndex(10f)
-            .focusProperties { canFocus = !ui.menuExpanded && !ui.headerHidden },
+            .focusProperties { canFocus = !ui.menuExpanded && !ui.headerHidden }
+            // The bar sits outside the content's key handler, so its left edge leads to the menu here.
+            .onPreviewKeyEvent { event ->
+                val atLeftEdge = ui.searchButtonFocused || (ui.accountButtonFocused && !m.showSearchIcon)
+                if (event.type != KeyEventType.KeyDown || event.key != Key.DirectionLeft || !atLeftEdge) return@onPreviewKeyEvent false
+                val rail = if (m.miniSectionRailEnabled) ui.collapsedMenuFocusRequesters[ui.focusedMenuSectionKey] else null
+                if (rail != null) runCatching { rail.requestFocus() } else ui.menuExpanded = true
+                true
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
@@ -50,7 +63,7 @@ internal fun BoxScope.HomeTopBar(m: HomeModel, ui: HomeUiState, search: SearchUi
             val activeAccount = accountState.active!!
             IconButton(
                 onClick = { ui.settingsCategory = "accounts"; ui.settingsSubpage = null; ui.settingsOverlay = true },
-                modifier = Modifier.padding(start = if (m.showSearchIcon) 18.dp else 0.dp).size(44.dp)
+                modifier = Modifier.padding(start = if (m.showSearchIcon) 18.dp else 0.dp).size(44.dp).onFocusChanged { ui.accountButtonFocused = it.isFocused }
             ) {
                 if (!activeAccount.avatar.isNullOrBlank()) AsyncImage(activeAccount.avatar, contentDescription = activeAccount.displayName,
                     modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant, CircleShape), contentScale = ContentScale.Crop)

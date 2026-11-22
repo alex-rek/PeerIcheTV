@@ -176,4 +176,17 @@
     <string name="mini_section_rail">Показывать мини-панель разделов</string>
     <string name="player_default_resolution">Разрешение по умолчанию</string>
     <string name="player_resolution_auto">Авто (по экрану)</string>
+    <string name="nav_playlists">Плейлисты</string>
+    <string name="watch_later">Смотреть позже</string>
+    <string name="watch_later_add">В плейлист «Смотреть позже»</string>
+    <string name="watch_later_remove">Убрать из плейлиста «Смотреть позже»</string>
+    <string name="watch_later_empty">Здесь пока пусто. Добавьте видео из его меню или из плеера.</string>
+    <string name="watch_later_count">Видео: %1$d</string>
+    <string name="watch_later_status_local">Сохранено на этом устройстве</string>
+    <string name="watch_later_status_syncing">Синхронизация…</string>
+    <string name="watch_later_status_synced">Синхронизировано с сервером</string>
+    <string name="watch_later_status_pending">Изменения отправятся, когда сервер станет доступен</string>
+    <string name="watch_later_status_partial">Часть видео не удалось добавить на сервер</string>
+    <string name="watch_later_status_sign_in">Войдите снова, чтобы синхронизировать</string>
+    <string name="player_control_caption_watch_later">Позже</string>
 </resources>

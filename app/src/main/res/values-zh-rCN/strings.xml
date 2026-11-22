@@ -306,4 +306,17 @@
     <string name="update_checking">正在检查更新…</string>
     <string name="update_no_new_version">PeerIcheTV 已是最新版本。</string>
     <string name="mini_section_rail">显示栏目迷你侧栏</string>
+    <string name="nav_playlists">播放列表</string>
+    <string name="watch_later">稍后观看</string>
+    <string name="watch_later_add">添加到“稍后观看”播放列表</string>
+    <string name="watch_later_remove">从“稍后观看”播放列表移除</string>
+    <string name="watch_later_empty">暂无视频。可从视频菜单或播放器中添加。</string>
+    <string name="watch_later_count">视频：%1$d</string>
+    <string name="watch_later_status_local">已保存在此设备</string>
+    <string name="watch_later_status_syncing">正在同步…</string>
+    <string name="watch_later_status_synced">已与服务器同步</string>
+    <string name="watch_later_status_pending">服务器可用时将发送更改</string>
+    <string name="watch_later_status_partial">部分视频无法添加到服务器</string>
+    <string name="watch_later_status_sign_in">请重新登录以同步</string>
+    <string name="player_control_caption_watch_later">稍后观看</string>
 </resources>

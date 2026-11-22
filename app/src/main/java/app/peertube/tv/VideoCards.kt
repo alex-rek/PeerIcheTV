@@ -60,7 +60,7 @@ import java.text.SimpleDateFormat
                 PublishedDate(video.publishedAt)
             }
         }
-        if (contextMenu) VideoContextMenu(video.name, subscribed, favorite, dismissContextMenu, { dismissContextMenu(); onOpen() }, { dismissContextMenu(); onSubscription() }, { dismissContextMenu(); onFavorite() }, { dismissContextMenu(); onChannel() }, { dismissContextMenu(); onExcludeRecommendation() }, { dismissContextMenu(); onMarkWatched() })
+        if (contextMenu) VideoContextMenu(video, subscribed, favorite, dismissContextMenu, { dismissContextMenu(); onOpen() }, { dismissContextMenu(); onSubscription() }, { dismissContextMenu(); onFavorite() }, { dismissContextMenu(); onChannel() }, { dismissContextMenu(); onExcludeRecommendation() }, { dismissContextMenu(); onMarkWatched() })
     }
 }
 
@@ -102,13 +102,13 @@ import java.text.SimpleDateFormat
                 }
             }
         }
-        if (contextMenu) VideoContextMenu(video.name, subscribed, favorite, dismissContextMenu, { dismissContextMenu(); onOpen() }, { dismissContextMenu(); onSubscription() }, { dismissContextMenu(); onFavorite() }, { dismissContextMenu(); if (channel.isNotBlank()) onChannel(channel) }, { dismissContextMenu(); onExcludeRecommendation() }, { dismissContextMenu(); onMarkWatched() })
+        if (contextMenu) VideoContextMenu(video, subscribed, favorite, dismissContextMenu, { dismissContextMenu(); onOpen() }, { dismissContextMenu(); onSubscription() }, { dismissContextMenu(); onFavorite() }, { dismissContextMenu(); if (channel.isNotBlank()) onChannel(channel) }, { dismissContextMenu(); onExcludeRecommendation() }, { dismissContextMenu(); onMarkWatched() })
     }
 }
 
 @Composable
 internal fun VideoContextMenu(
-    title: String,
+    video: Video,
     subscribed: Boolean,
     favorite: Boolean,
     onDismiss: () -> Unit,
@@ -119,6 +119,9 @@ internal fun VideoContextMenu(
     onExcludeRecommendation: () -> Unit = {},
     onMarkWatched: () -> Unit = {}
 ) {
+    val title = video.name
+    val context = LocalContext.current
+    val watchLater by WatchLater.state.collectAsState()
     val initialMenuFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { initialMenuFocus.requestFocus() } }
     Dialog(
@@ -150,6 +153,9 @@ internal fun VideoContextMenu(
                         }
                         TextButton(onClick = onFavorite, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), modifier = Modifier.fillMaxWidth())
+                        }
+                        TextButton(onClick = { WatchLater.toggle(context, video); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(if (video.uuid in watchLater) R.string.watch_later_remove else R.string.watch_later_add), modifier = Modifier.fillMaxWidth())
                         }
                         TextButton(onClick = onChannel, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.open_channel), modifier = Modifier.fillMaxWidth())

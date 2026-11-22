@@ -6,6 +6,7 @@ import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.lifecycle.Lifecycle
@@ -188,6 +189,7 @@ import java.util.Locale
         else if (ui.menuExpanded) { ui.menuExpanded = false; ui.pendingMenuFocus[0]?.second?.cancel(); ui.pendingMenuFocus[0] = null; ui.sectionFocusPending = true }
         else if (m.tab == "channel") m.tab = m.channelReturnTab
         else if (m.tab == "server_channels") m.tab = "channels"
+        else if (m.tab == "watch_later") { ui.sectionFocusPending = true; m.tab = "playlists" }
         else when (m.exitMode) {
             "single" -> (context as? Activity)?.finish()
             "double" -> {
@@ -228,7 +230,17 @@ import java.util.Locale
             (context as? MainActivity)?.pendingChannelNavigation = null
         }
     }
+    LaunchedEffect(lifecycleOwner) {
+        // Picks up changes made on the site or other devices while the app is on screen.
+        lifecycleOwner?.lifecycle?.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                WatchLater.requestSync()
+                kotlinx.coroutines.delay(120_000)
+            }
+        }
+    }
     LaunchedEffect(m.tab) {
+        if (m.tab == "playlists" || m.tab == "watch_later") WatchLater.requestSync()
         if (m.tab == "history") m.loadHistory()
         if (m.tab == "live") {
             m.loadLive()
@@ -441,7 +453,8 @@ import java.util.Locale
                         ui.menuExpanded = true
                         true
                     }
-                    else if (focusManager.moveFocus(FocusDirection.Left)) true else { ui.menuExpanded = true; true }
+                    else if (focusManager.moveFocus(FocusDirection.Left) && (m.miniSectionRailEnabled || !ui.searchButtonFocused)) true
+                    else { ui.menuExpanded = true; true }
                 }
                 event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp && !ui.menuExpanded && m.showSearchIcon && !ui.searchButtonFocused -> {
                     if (focusManager.moveFocus(FocusDirection.Up)) true
@@ -463,6 +476,7 @@ import java.util.Locale
                 "instances" -> ServerDirectoryTab(m, ui)
                 "channels" -> ChannelsTab(m, ui)
                 "server_channels" -> ServerChannelsTab(m, ui)
+                "playlists" -> PlaylistsTab(m, ui)
                 "sepia" -> SearchTab(m, ui, search, actions)
                 "settings" -> SettingsDashboard(
                     model = m,
