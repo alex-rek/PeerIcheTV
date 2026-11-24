@@ -24,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -504,6 +506,7 @@ internal fun SettingsDashboard(
                                 SettingsChoice(stringResource(R.string.player_resume_title), stringResource(if (model.resumePlayback) R.string.player_resume_saved else R.string.player_resume_start), listOf("false" to stringResource(R.string.player_resume_start), "true" to stringResource(R.string.player_resume_saved))) { model.updateResumePlayback(it.toBoolean()) }
                             }
                             "search" -> {
+                                Text(stringResource(R.string.search_settings_title), style = MaterialTheme.typography.titleLarge)
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Text(stringResource(R.string.show_search_icon), Modifier.weight(1f))
                                     Switch(model.showSearchIcon, model::updateShowSearchIcon)
@@ -512,7 +515,7 @@ internal fun SettingsDashboard(
                                     Text(stringResource(R.string.search_include_sensitive), Modifier.weight(1f))
                                     Switch(model.searchSettings.includeSensitive, model::updateIncludeSensitive)
                                 }
-                                SettingsChoice(
+                                if (model.searchSettings.includeSensitive) SettingsChoice(
                                     stringResource(R.string.search_sensitive_display),
                                     stringResource(when (model.searchSettings.sensitiveDisplayMode) { "hide" -> R.string.search_sensitive_hide; "warning" -> R.string.search_sensitive_warning; "show" -> R.string.search_sensitive_show; else -> R.string.search_sensitive_blur }),
                                     listOf("hide" to stringResource(R.string.search_sensitive_hide), "blur" to stringResource(R.string.search_sensitive_blur), "warning" to stringResource(R.string.search_sensitive_warning), "show" to stringResource(R.string.search_sensitive_show))
@@ -528,17 +531,27 @@ internal fun SettingsDashboard(
                                 Text(stringResource(R.string.search_methods), style = MaterialTheme.typography.titleMedium)
                                 model.searchSettings.order.forEachIndexed { index, source ->
                                     val label = sourceLabels.first { it.first == source }.second
-                                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("${index + 1}. ${stringResource(label)}", Modifier.weight(1f), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    // Number in its own column and stacked arrows leave the name room to wrap instead of being cut.
+                                    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("${index + 1}.", Modifier.width(28.dp))
+                                        Text(stringResource(label), Modifier.weight(1f).padding(end = 8.dp), maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                         Switch(checked = source in model.searchSettings.enabled, onCheckedChange = { model.updateSearchSourceEnabled(source, it) })
-                                        TextButton(onClick = { model.moveSearchSource(source, -1) }, enabled = index > 0) { Text("↑") }
-                                        TextButton(onClick = { model.moveSearchSource(source, 1) }, enabled = index < model.searchSettings.order.lastIndex) { Text("↓") }
+                                        Column(Modifier.padding(start = 4.dp)) {
+                                            IconButton(onClick = { model.moveSearchSource(source, -1) }, enabled = index > 0, modifier = Modifier.size(36.dp)) {
+                                                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.search_method_move_up))
+                                            }
+                                            IconButton(onClick = { model.moveSearchSource(source, 1) }, enabled = index < model.searchSettings.order.lastIndex, modifier = Modifier.size(36.dp)) {
+                                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.search_method_move_down))
+                                            }
+                                        }
                                     }
                                 }
                                 SettingsChoice(stringResource(R.string.search_execution_mode), stringResource(when (model.searchSettings.mode) { "sequential" -> R.string.search_mode_sequential; "parallel" -> R.string.search_mode_parallel; else -> R.string.search_mode_hybrid }), listOf("sequential" to stringResource(R.string.search_mode_sequential), "parallel" to stringResource(R.string.search_mode_parallel), "hybrid" to stringResource(R.string.search_mode_hybrid))) { model.updateSearchExecutionMode(it) }
                                 SettingsChoice(stringResource(R.string.search_sufficient_results), model.searchSettings.sufficientResults.toString(), (10..100 step 10).map { it.toString() to it.toString() }) { model.updateSearchSufficientResults(it.toInt()) }
+                                if (SearchSource.CUSTOM in model.searchSettings.enabled) {
                                 Text(stringResource(R.string.search_custom_indexes_help), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 OutlinedTextField(value = customIndexesInput, onValueChange = { customIndexesInput = it; model.updateCustomSearchIndexes(it) }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 5, label = { Text(stringResource(R.string.search_source_custom)) })
+                                }
                                 val sortTitle = stringResource(when (model.videoSortMode) { "popular" -> R.string.video_sort_popular; "title" -> R.string.video_sort_title; else -> R.string.video_sort_newest })
                                 SettingsChoice(stringResource(R.string.video_sort_mode), sortTitle, listOf("newest" to stringResource(R.string.video_sort_newest), "popular" to stringResource(R.string.video_sort_popular), "title" to stringResource(R.string.video_sort_title))) { model.updateVideoSortMode(it) }
                                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
@@ -552,21 +565,19 @@ internal fun SettingsDashboard(
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.discovery_wifi), Modifier.weight(1f)); Switch(discovery.wifiOnly, { model.setDiscoveryOption("wifi_only", it) }) }
                                 SettingsChoice(stringResource(R.string.discovery_depth), discovery.maxDepth.toString(), (1..5).map { it.toString() to it.toString() }) { model.setDiscoveryOption("depth", it.toInt()) }
                                 SettingsChoice(stringResource(R.string.discovery_limit), discovery.maxNewPerRun.toString(), listOf(10, 20, 30, 50, 100).map { it.toString() to it.toString() }) { model.setDiscoveryOption("max_new", it.toInt()) }
-                                SettingsChoice(stringResource(R.string.discovery_refresh), "${discovery.refreshDays} d", listOf(1, 3, 7, 14, 30).map { it.toString() to "$it d" }) { model.setDiscoveryOption("refresh_days", it.toInt()) }
+                                SettingsChoice(stringResource(R.string.discovery_refresh), stringResource(R.string.discovery_refresh_days, discovery.refreshDays), listOf(1, 3, 7, 14, 30).map { it.toString() to stringResource(R.string.discovery_refresh_days, it) }) { model.setDiscoveryOption("refresh_days", it.toInt()) }
                                 OutlinedTextField(value = remoteServerCatalogInput, onValueChange = { remoteServerCatalogInput = it; model.setDiscoveryOption("catalog_url", it) }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.discovery_json_url)) })
                                 OutlinedTextField(value = manualServerInput, onValueChange = { manualServerInput = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.server_host_hint)) })
                                 Button(onClick = { model.addServerManually(manualServerInput); manualServerInput = "" }, enabled = manualServerInput.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.server_add_manual)) }
                                 Button(onClick = { model.runServerDiscovery() }, enabled = !model.isDiscoveringServers, modifier = Modifier.fillMaxWidth()) { Text(if (model.isDiscoveringServers) stringResource(R.string.discovery_working) else stringResource(R.string.discovery_run)) }
                                 Text(stringResource(R.string.discovery_found, model.discoveredServers.size), style = MaterialTheme.typography.bodySmall)
                                 model.discoveryError?.let { Text(it, color = MaterialTheme.colorScheme.error, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(onClick = { model.clearDiscoveredServers() }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.discovery_clear)) }
-                                    OutlinedButton(onClick = { serverImportLauncher.launch(arrayOf("application/json", "text/json", "application/octet-stream")) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.server_import)) }
-                                    OutlinedButton(onClick = {
-                                        val send = Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_TEXT, model.exportServerCatalog())
-                                        settingsContext.startActivity(Intent.createChooser(send, settingsContext.getString(R.string.server_export)))
-                                    }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.server_export)) }
-                                }
+                                OutlinedButton(onClick = { serverImportLauncher.launch(arrayOf("application/json", "text/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.server_import), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+                                OutlinedButton(onClick = {
+                                    val send = Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_TEXT, model.exportServerCatalog())
+                                    settingsContext.startActivity(Intent.createChooser(send, settingsContext.getString(R.string.server_export)))
+                                }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.server_export), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+                                OutlinedButton(onClick = { model.clearDiscoveredServers() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.discovery_clear), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
                             }
                             "network" -> {
                                 val proxyCheckScope = rememberCoroutineScope()
@@ -686,7 +697,7 @@ internal fun SettingsChoice(title: String, selected: String, options: List<Pair<
     }
     Text(title, style = MaterialTheme.typography.titleMedium)
     OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth().focusRequester(choiceFocus)) {
-            Text(selected, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(selected, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
     if (expanded) {
         Dialog(

@@ -366,4 +366,8 @@
     <string name="speech_test_stop">जाँच रोकें</string>
     <string name="speech_install_data">वॉइस डेटा इंस्टॉल करें</string>
     <string name="speech_panel_hint">←/→ मान बदलें · वापस बंद करता है</string>
+    <string name="search_settings_title">वीडियो खोज</string>
+    <string name="search_method_move_up">ऊपर ले जाएँ</string>
+    <string name="search_method_move_down">नीचे ले जाएँ</string>
+    <string name="discovery_refresh_days">%1$d दिन</string>
 </resources>

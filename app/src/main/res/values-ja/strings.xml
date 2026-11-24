@@ -366,4 +366,8 @@
     <string name="speech_test_stop">テストを停止</string>
     <string name="speech_install_data">音声データをインストール</string>
     <string name="speech_panel_hint">←/→ 値を変更・戻るで閉じる</string>
+    <string name="search_settings_title">動画検索</string>
+    <string name="search_method_move_up">上へ</string>
+    <string name="search_method_move_down">下へ</string>
+    <string name="discovery_refresh_days">%1$d日</string>
 </resources>

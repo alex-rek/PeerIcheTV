@@ -366,4 +366,8 @@
     <string name="speech_test_stop">停止测试</string>
     <string name="speech_install_data">安装语音数据</string>
     <string name="speech_panel_hint">←/→ 更改数值 · 返回关闭</string>
+    <string name="search_settings_title">视频搜索</string>
+    <string name="search_method_move_up">上移</string>
+    <string name="search_method_move_down">下移</string>
+    <string name="discovery_refresh_days">%1$d 天</string>
 </resources>

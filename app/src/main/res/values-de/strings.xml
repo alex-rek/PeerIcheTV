@@ -366,4 +366,8 @@
     <string name="speech_test_stop">Test stoppen</string>
     <string name="speech_install_data">Sprachdaten installieren</string>
     <string name="speech_panel_hint">←/→ Wert ändern · Zurück schließt</string>
+    <string name="search_settings_title">Videosuche</string>
+    <string name="search_method_move_up">Nach oben</string>
+    <string name="search_method_move_down">Nach unten</string>
+    <string name="discovery_refresh_days">%1$d Tg.</string>
 </resources>

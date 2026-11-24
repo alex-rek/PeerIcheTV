@@ -366,4 +366,8 @@
     <string name="speech_test_stop">إيقاف الاختبار</string>
     <string name="speech_install_data">تثبيت بيانات الصوت</string>
     <string name="speech_panel_hint">←/→ تغيير القيمة · رجوع للإغلاق</string>
+    <string name="search_settings_title">البحث عن الفيديو</string>
+    <string name="search_method_move_up">نقل لأعلى</string>
+    <string name="search_method_move_down">نقل لأسفل</string>
+    <string name="discovery_refresh_days">%1$d يوم</string>
 </resources>

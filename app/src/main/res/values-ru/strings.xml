@@ -236,4 +236,8 @@
     <string name="speech_test_stop">Остановить проверку</string>
     <string name="speech_install_data">Установить голосовые данные</string>
     <string name="speech_panel_hint">←/→ — изменить значение · Назад — закрыть</string>
+    <string name="search_settings_title">Поиск видео</string>
+    <string name="search_method_move_up">Выше</string>
+    <string name="search_method_move_down">Ниже</string>
+    <string name="discovery_refresh_days">%1$d дн.</string>
 </resources>

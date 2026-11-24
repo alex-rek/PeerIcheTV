@@ -236,4 +236,8 @@
     <string name="speech_test_stop">Stop test</string>
     <string name="speech_install_data">Install voice data</string>
     <string name="speech_panel_hint">←/→ change the value · Back closes</string>
+    <string name="search_settings_title">Video search</string>
+    <string name="search_method_move_up">Move up</string>
+    <string name="search_method_move_down">Move down</string>
+    <string name="discovery_refresh_days">%1$d d</string>
 </resources>
