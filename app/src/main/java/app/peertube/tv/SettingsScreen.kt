@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.runtime.*
@@ -116,6 +117,7 @@ internal fun SettingsDashboard(
         "interface" to R.string.settings_interface,
         "subtitles" to R.string.settings_subtitles,
         "translation" to R.string.settings_translation,
+        "speech" to R.string.settings_speech,
         "player" to R.string.settings_player,
         "search" to R.string.settings_search,
         "network" to R.string.settings_network,
@@ -157,6 +159,7 @@ internal fun SettingsDashboard(
                                 "accounts" -> Icon(Icons.Filled.AccountCircle, contentDescription = null, modifier = Modifier.size(54.dp))
                                 "subtitles" -> Icon(Icons.Filled.ClosedCaption, contentDescription = null, modifier = Modifier.size(54.dp))
                                 "translation" -> Icon(Icons.Filled.Public, contentDescription = null, modifier = Modifier.size(54.dp))
+                                "speech" -> Icon(Icons.Filled.RecordVoiceOver, contentDescription = null, modifier = Modifier.size(54.dp))
                                 "language" -> Icon(Icons.Filled.Public, contentDescription = null, modifier = Modifier.size(54.dp))
                                 "general" -> Icon(Icons.Filled.Settings, contentDescription = null, modifier = Modifier.size(54.dp))
                                 "interface" -> Icon(Icons.Filled.VideoLibrary, contentDescription = null, modifier = Modifier.size(54.dp))
@@ -309,6 +312,7 @@ internal fun SettingsDashboard(
                                 val recommendationLanguageLabel = if (model.recommendationLanguage == "country") stringResource(R.string.recommendations_language_country) else Locale.forLanguageTag(model.recommendationLanguage).getDisplayLanguage(currentLocale())
                                 SettingsChoice(stringResource(R.string.recommendations_language), recommendationLanguageLabel, recommendationLanguageOptions) { model.updateRecommendationLanguage(it) }
                             }
+                            "speech" -> SubtitleSpeechSettingsPanel(subtitleTranslationLanguage)
                             "subtitles" -> {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.subtitle_remember_channel), Modifier.weight(1f)); Switch(rememberSubtitleChannel, { rememberSubtitleChannel = it; playerPrefs.edit().putBoolean("rememberSubtitleByChannel", it).apply() }) }
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.subtitle_default_enabled), Modifier.weight(1f)); Switch(subtitlesDefault, { subtitlesDefault = it; playerPrefs.edit().putBoolean("subtitlesEnabledByDefault", it).apply() }) }
@@ -666,7 +670,7 @@ internal fun SettingsDashboard(
 }
 
 @Composable
-private fun SettingsChoice(title: String, selected: String, options: List<Pair<String, String>>, onSelect: (String) -> Unit) {
+internal fun SettingsChoice(title: String, selected: String, options: List<Pair<String, String>>, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var restoreFocus by remember { mutableStateOf(false) }
     val choiceFocus = remember { FocusRequester() }

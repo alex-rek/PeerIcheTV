@@ -265,9 +265,15 @@ fun translateSubtitleFile(
     require(sourceLanguage != target) { "The selected subtitle is already in the target language" }
     val mlSource = com.google.mlkit.nl.translate.TranslateLanguage.fromLanguageTag(sourceLanguage)
         ?: error("Translation does not support source language: $sourceLanguage")
-    val mlTarget = com.google.mlkit.nl.translate.TranslateLanguage.fromLanguageTag(target)
+    com.google.mlkit.nl.translate.TranslateLanguage.fromLanguageTag(target)
         ?: error("Translation does not support target language: $target")
+    val cues = downloadSubtitleCues(server, caption)
+    onCuesLoaded(cues)
+    return translateSubtitleCues(cues, mlSource, target, onProgress, onBatchTranslated)
+}
 
+/** Downloads and parses one public caption file (blocking; call off the main thread). */
+fun downloadSubtitleCues(server: String, caption: VideoCaption): List<TranslatedCue> {
     val rawPath = caption.fileUrl?.takeIf(String::isNotBlank)
         ?: caption.captionPath?.takeIf(String::isNotBlank)
         ?: error("Subtitle file URL is missing")
@@ -285,8 +291,21 @@ fun translateSubtitleFile(
     }
     val cues = parseSubtitleCues(subtitleText)
     check(cues.isNotEmpty()) { "No readable subtitle cues were found" }
-    onCuesLoaded(cues)
+    return cues
+}
 
+/** Translates parsed cues on device in batches (blocking; call off the main thread). */
+fun translateSubtitleCues(
+    cues: List<TranslatedCue>,
+    sourceLanguage: String,
+    targetLanguage: String,
+    onProgress: (Int, Int) -> Unit = { _, _ -> },
+    onBatchTranslated: (List<TranslatedCue>) -> Unit = {}
+): List<TranslatedCue> {
+    val mlSource = com.google.mlkit.nl.translate.TranslateLanguage.fromLanguageTag(sourceLanguage.substringBefore('-').lowercase())
+        ?: error("Translation does not support source language: $sourceLanguage")
+    val mlTarget = com.google.mlkit.nl.translate.TranslateLanguage.fromLanguageTag(targetLanguage.substringBefore('-').lowercase())
+        ?: error("Translation does not support target language: $targetLanguage")
     val translator = Translation.getClient(
         TranslatorOptions.Builder().setSourceLanguage(mlSource).setTargetLanguage(mlTarget).build()
     )
