@@ -23,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.ClosedCaptionOff
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Forward10
@@ -31,6 +32,11 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.VoiceOverOff
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.layout.onSizeChanged
+import kotlin.math.roundToInt
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Speed
@@ -372,7 +378,7 @@ private fun isValidPeerTubeServer(value: String): Boolean {
     }
     val controlActions = buildList {
         addAll(listOf(3, 4, 0, 1, 2))
-        if (subtitles.isNotEmpty()) add(5)
+        if (subtitles.isNotEmpty()) { add(5); add(12) }
         if (!channelName.isNullOrBlank()) add(6)
         if (!uuid.isNullOrBlank()) { add(7); add(11) }
         add(8)
@@ -411,6 +417,19 @@ private fun isValidPeerTubeServer(value: String): Boolean {
             }
     }
     LaunchedEffect(player, playerVolume) { player.volume = playerVolume / 100f }
+    val speechSettings by SubtitleSpeechPrefs.state(context).collectAsState()
+    val speech = remember(player) { SubtitleSpeechManager(context, player) }
+    val speechStatus by speech.status.collectAsState()
+    val speechVoices by speech.voices.collectAsState()
+    var speechPanelOpen by remember(url) { mutableStateOf(false) }
+    var speechPanelRow by remember(url) { mutableIntStateOf(0) }
+    // Subtitles and speech buttons: a short press toggles on release, holding OK opens the side menu.
+    var heldControl by remember { mutableIntStateOf(-1) }
+    var heldLongPressDone by remember { mutableStateOf(false) }
+    // As in PeerIche: hiding subtitles only stops drawing them; the track, translation and speech keep running.
+    var subtitlesShown by remember { mutableStateOf(playerPreferences.getBoolean("subtitlesShown", true)) }
+    var toggleSubtitleDisplay: () -> Unit = {}
+    LaunchedEffect(speech, speechSettings) { speech.configure(speechSettings) }
     val latestUuid by rememberUpdatedState(uuid)
     val latestAfterVideoAction by rememberUpdatedState(afterVideoAction)
     val latestWatchedThreshold by rememberUpdatedState(watchedRecommendationThreshold)
@@ -600,8 +619,8 @@ private fun isValidPeerTubeServer(value: String): Boolean {
             surface.setFrameRate(rate, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE, Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS)
         }
     }
-    LaunchedEffect(controlsVisible, controlsInteractionToken, playerOverlayDurationSeconds, qualityPanelOpen, subtitlePanelOpen, infoPanelOpen) {
-        if (controlsVisible && !qualityPanelOpen && !subtitlePanelOpen && !infoPanelOpen) {
+    LaunchedEffect(controlsVisible, controlsInteractionToken, playerOverlayDurationSeconds, qualityPanelOpen, subtitlePanelOpen, infoPanelOpen, speechPanelOpen) {
+        if (controlsVisible && !qualityPanelOpen && !subtitlePanelOpen && !infoPanelOpen && !speechPanelOpen) {
             kotlinx.coroutines.delay(playerOverlayDurationSeconds * 1_000L)
             controlsVisible = false
             focusedControlIndex = -1
@@ -649,10 +668,11 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                 playbackSpeed = when (playbackSpeed) { 0.75f -> 1f; 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 0.75f }
                 player.setPlaybackSpeed(playbackSpeed)
             }
-            5 -> { subtitlePanelOpen = !subtitlePanelOpen; subtitlePanelRow = 0 }
+            5 -> toggleSubtitleDisplay()
             6 -> toggleSubscription()
             7 -> toggleFavorite()
             11 -> WatchLater.toggle(context, favoriteVideo)
+            12 -> SubtitleSpeechPrefs.update(context) { it.copy(enabled = !it.enabled) }
             8 -> {
                 qualityPanelOpen = !qualityPanelOpen
                 if (qualityPanelOpen) {
@@ -816,6 +836,16 @@ private fun isValidPeerTubeServer(value: String): Boolean {
             }
         }
     }
+    toggleSubtitleDisplay = {
+        val visible = subtitlesShown && (subtitlesEnabled || subtitleTranslationEnabled)
+        subtitlesShown = !visible
+        // Showing with no track chosen picks the preferred one, like choosing it in the menu.
+        if (subtitlesShown && !subtitlesEnabled && !subtitleTranslationEnabled && subtitles.isNotEmpty()) {
+            selectSubtitle(subtitles.indexOfFirst { it.language?.id.equals(preferredSubtitleLanguage, true) }.takeIf { it >= 0 } ?: 0)
+        }
+        playerPreferences.edit().putBoolean("subtitlesShown", subtitlesShown).apply()
+        playerSurfaceView?.setSubtitlesShown(subtitlesShown)
+    }
     LaunchedEffect(subtitles, selectedSubtitleIndex, subtitleTranslationLanguage) {
         if (!playerPreferences.getBoolean("subtitleTranslationEnabledByDefault", false) || autoTranslationConsidered || subtitles.isEmpty()) return@LaunchedEffect
         autoTranslationConsidered = true
@@ -921,12 +951,48 @@ private fun isValidPeerTubeServer(value: String): Boolean {
             player.release()
         }
     }
+    // Declared after the release effect, so speech stops before the player is released.
+    DisposableEffect(speech) { onDispose { speech.close() } }
+    LaunchedEffect(speech, server, subtitles, selectedSubtitleIndex, subtitleTranslationLanguage) {
+        speech.setSource(server, subtitles, selectedSubtitleIndex, subtitleTranslationLanguage)
+    }
+    LaunchedEffect(speech, subtitleTranslationEnabled, subtitleTranslationLanguage, translatedCues.size) {
+        speech.setPlayerTranslation(subtitleTranslationEnabled, subtitleTranslationLanguage, translatedCues.toList())
+    }
+    val speechLanguage = speechSettings.language.ifBlank { subtitleTranslationLanguage }
+    val speechLanguageVoices = speechVoices.filter { it.language.substringBefore('-') == speechLanguage.substringBefore('-') }.map { it.name }
+    fun cycleSpeechRow(row: Int, delta: Int) {
+        SubtitleSpeechPrefs.update(context) { s ->
+            when (row) {
+                0 -> s.copy(enabled = !s.enabled)
+                1 -> s.copy(mode = SubtitleSpeechSettings.modes.cyclicNext(s.mode, delta))
+                2 -> s.copy(language = (listOf("") + downloadableSubtitleTranslationLanguages().map { it.first }).cyclicNext(s.language, delta), voice = "")
+                3 -> s.copy(voice = (listOf("") + speechLanguageVoices).cyclicNext(s.voice, delta))
+                4 -> s.copy(rate = ((s.rate * 100).roundToInt() + delta * 10).coerceIn(50, 200) / 100f)
+                5 -> s.copy(pitch = ((s.pitch * 100).roundToInt() + delta * 10).coerceIn(50, 200) / 100f)
+                6 -> s.copy(audio = SubtitleSpeechSettings.audioModes.cyclicNext(s.audio, delta))
+                7 -> if (s.audio == "duck") s.copy(duckPercent = (s.duckPercent + delta * 10).coerceIn(0, 100)) else s
+                8 -> s.copy(strategy = SubtitleSpeechSettings.strategies.cyclicNext(s.strategy, delta))
+                9 -> s.copy(fallback = SubtitleSpeechSettings.fallbacks.cyclicNext(s.fallback, delta))
+                else -> s
+            }
+        }
+    }
+    val centerKeyCodes = setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BUTTON_SELECT)
     val focusRequester = remember { FocusRequester() }
     Box(Modifier.fillMaxSize().background(Color.Black)
         .focusRequester(focusRequester)
         .focusable()
         .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible; controlsInteractionToken++ }) }
         .onPreviewKeyEvent { event ->
+            // Speech button: a short press toggles speech on release, holding opens its side panel.
+            if (heldControl >= 0 && event.type == KeyEventType.KeyUp && event.nativeKeyEvent.keyCode in centerKeyCodes) {
+                val control = heldControl
+                heldControl = -1
+                if (!heldLongPressDone) activateControl(control)
+                heldLongPressDone = false
+                return@onPreviewKeyEvent true
+            }
             if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent event.nativeKeyEvent.keyCode in setOf(
                 KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP,
                 KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
@@ -951,6 +1017,20 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                     KeyEvent.KEYCODE_MEDIA_PLAY -> { player.play(); true }
                     KeyEvent.KEYCODE_MEDIA_PAUSE -> { player.pause(); true }
                     KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> { qualityPanelOpen = false; showControls(); true }
+                    else -> true
+                }
+            } else if (speechPanelOpen) {
+                when (event.nativeKeyEvent.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_UP -> { speechPanelRow = (speechPanelRow - 1).coerceAtLeast(0); true }
+                    KeyEvent.KEYCODE_DPAD_DOWN -> { speechPanelRow = (speechPanelRow + 1).coerceAtMost(9); true }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> { cycleSpeechRow(speechPanelRow, -1); true }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> { cycleSpeechRow(speechPanelRow, 1); true }
+                    in centerKeyCodes -> { if (event.nativeKeyEvent.repeatCount == 0) cycleSpeechRow(speechPanelRow, 1); true }
+                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_HEADSETHOOK -> {
+                        if (event.nativeKeyEvent.repeatCount == 0) { if (player.isPlaying) player.pause() else player.play() }
+                        true
+                    }
+                    KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> { speechPanelOpen = false; showControls(); true }
                     else -> true
                 }
             } else if (subtitlePanelOpen) {
@@ -1084,7 +1164,17 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                     true
                 }
                 KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BUTTON_SELECT -> {
-                    if (event.nativeKeyEvent.repeatCount == 0) {
+                    val native = event.nativeKeyEvent
+                    val focusedAction = if (focusedControlIndex >= 0 && !progressFocused) controlActions.getOrNull(focusedControlIndex) else null
+                    if (focusedAction == 5 || focusedAction == 12) {
+                        if (native.repeatCount == 0) { heldControl = focusedAction; heldLongPressDone = false }
+                        else if (heldControl == focusedAction && !heldLongPressDone && (native.isLongPress || native.repeatCount >= 10)) {
+                            heldLongPressDone = true
+                            if (focusedAction == 5) { subtitlePanelOpen = true; subtitlePanelRow = 0 }
+                            else { speechPanelOpen = true; speechPanelRow = 0 }
+                        }
+                        showControls()
+                    } else if (native.repeatCount == 0) {
                         if (focusedControlIndex >= 0 && !progressFocused) controlActions.getOrNull(focusedControlIndex)?.let(::activateControl)
                         else { if (player.isPlaying) player.pause() else player.play(); showControls() }
                     }; true
@@ -1108,9 +1198,10 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                 val subtitleSize = playerPreferences.getFloat("subtitleSize", 0.053f)
                 setSubtitleAppearance(subtitleSize, subtitleColor)
                 setSubtitlePosition(subtitleBottomOffset, subtitleHorizontalPosition)
+                setSubtitlesShown(subtitlesShown)
             }
-        }, update = { playerView -> (playerView as? RemotePlayerView)?.apply { setSubtitleAppearance(subtitleSize, subtitleColor); setSubtitlePosition(subtitleBottomOffset, subtitleHorizontalPosition) } }, modifier = Modifier.fillMaxSize())
-        if (subtitleTranslationEnabled) {
+        }, update = { playerView -> (playerView as? RemotePlayerView)?.apply { setSubtitleAppearance(subtitleSize, subtitleColor); setSubtitlePosition(subtitleBottomOffset, subtitleHorizontalPosition); setSubtitlesShown(subtitlesShown) } }, modifier = Modifier.fillMaxSize())
+        if (subtitleTranslationEnabled && subtitlesShown) {
             val currentCue = translatedCues.firstOrNull { playerPosition >= it.startMs && playerPosition <= it.endMs }
                 ?: sourceSubtitleCues.firstOrNull { playerPosition >= it.startMs && playerPosition <= it.endMs }
             currentCue?.let { cue ->
@@ -1183,19 +1274,32 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                         .then(if (progressFocused) Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = .27f), androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).padding(horizontal = 8.dp) else Modifier))
                     Text(formatPlayerTime(player.duration), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    PlayerIconControl(Icons.Filled.Repeat, "Repeat video", stringResource(R.string.player_control_caption_repeat), selected = focusedControlIndex == controlActions.indexOf(3), modifier = Modifier.weight(1f)) { activateControl(3) }
-                    PlayerLabelControl("${playbackSpeed}×", "Playback speed", stringResource(R.string.player_control_caption_speed), selected = focusedControlIndex == controlActions.indexOf(4), modifier = Modifier.weight(1f)) { activateControl(4) }
-                    PlayerIconControl(Icons.Filled.Replay10, "Seek backward ${seekStepSeconds} seconds", stringResource(R.string.player_control_caption_back), selected = focusedControlIndex == controlActions.indexOf(0), modifier = Modifier.weight(1f)) { activateControl(0) }
-                    PlayerIconControl(if (playbackActive) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playbackActive) "Pause" else "Play", stringResource(R.string.player_control_caption_play_pause), selected = focusedControlIndex == controlActions.indexOf(1), modifier = Modifier.weight(1f), large = true) { activateControl(1) }
-                    PlayerIconControl(Icons.Filled.Forward10, "Seek forward ${seekStepSeconds} seconds", stringResource(R.string.player_control_caption_forward), selected = focusedControlIndex == controlActions.indexOf(2), modifier = Modifier.weight(1f)) { activateControl(2) }
-                    if (subtitles.isNotEmpty()) PlayerIconControl(Icons.Filled.ClosedCaption, "Subtitles", stringResource(R.string.player_control_caption_subtitles), selected = focusedControlIndex == controlActions.indexOf(5), modifier = Modifier.weight(1f)) { activateControl(5) }
-                    if (!channelName.isNullOrBlank()) PlayerIconControl(if (isSubscribed) Icons.Filled.Check else Icons.Filled.PersonAdd, "Subscribe", stringResource(R.string.player_control_caption_subscribe), selected = focusedControlIndex == controlActions.indexOf(6), modifier = Modifier.weight(1f)) { activateControl(6) }
-                    if (!uuid.isNullOrBlank()) PlayerIconControl(if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, "Favorite", stringResource(R.string.player_control_caption_favorite), selected = focusedControlIndex == controlActions.indexOf(7), modifier = Modifier.weight(1f)) { activateControl(7) }
-                    if (!uuid.isNullOrBlank()) PlayerIconControl(if (uuid in watchLaterState) Icons.Filled.WatchLater else Icons.Outlined.WatchLater, "Watch later", stringResource(R.string.player_control_caption_watch_later), selected = focusedControlIndex == controlActions.indexOf(11), modifier = Modifier.weight(1f)) { activateControl(11) }
-                    PlayerIconControl(Icons.Filled.HighQuality, "Playback quality settings", stringResource(R.string.player_control_caption_quality), selected = focusedControlIndex == controlActions.indexOf(8), modifier = Modifier.weight(1f)) { activateControl(8) }
-                    if (!uuid.isNullOrBlank()) PlayerIconControl(Icons.Filled.Info, "Video information", stringResource(R.string.player_control_caption_info), selected = focusedControlIndex == controlActions.indexOf(9), modifier = Modifier.weight(1f)) { activateControl(9) }
-                    if (!uuid.isNullOrBlank()) PlayerIconControl(Icons.Outlined.ChatBubbleOutline, "Comments", stringResource(R.string.player_control_caption_comments), selected = focusedControlIndex == controlActions.indexOf(10), modifier = Modifier.weight(1f)) { activateControl(10) }
+                // Fixed-width buttons scroll sideways when they do not fit, instead of squeezing into each other.
+                val controlsScroll = rememberScrollState()
+                var controlsViewport by remember { mutableIntStateOf(0) }
+                val controlWidthPx = with(androidx.compose.ui.platform.LocalDensity.current) { PLAYER_CONTROL_WIDTH.roundToPx() }
+                LaunchedEffect(focusedControlIndex, controlsViewport, controlsScroll.maxValue) {
+                    if (focusedControlIndex >= 0 && controlsScroll.maxValue > 0) {
+                        val center = focusedControlIndex * controlWidthPx + controlWidthPx / 2 - controlsViewport / 2
+                        controlsScroll.animateScrollTo(center.coerceIn(0, controlsScroll.maxValue))
+                    }
+                }
+                Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                Row(Modifier.onSizeChanged { controlsViewport = it.width }.horizontalScroll(controlsScroll), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    PlayerIconControl(Icons.Filled.Repeat, "Repeat video", stringResource(R.string.player_control_caption_repeat), selected = focusedControlIndex == controlActions.indexOf(3), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(3) }
+                    PlayerLabelControl("${playbackSpeed}×", "Playback speed", stringResource(R.string.player_control_caption_speed), selected = focusedControlIndex == controlActions.indexOf(4), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(4) }
+                    PlayerIconControl(Icons.Filled.Replay10, "Seek backward ${seekStepSeconds} seconds", stringResource(R.string.player_control_caption_back), selected = focusedControlIndex == controlActions.indexOf(0), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(0) }
+                    PlayerIconControl(if (playbackActive) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playbackActive) "Pause" else "Play", stringResource(R.string.player_control_caption_play_pause), selected = focusedControlIndex == controlActions.indexOf(1), modifier = Modifier.width(PLAYER_CONTROL_WIDTH), large = true) { activateControl(1) }
+                    PlayerIconControl(Icons.Filled.Forward10, "Seek forward ${seekStepSeconds} seconds", stringResource(R.string.player_control_caption_forward), selected = focusedControlIndex == controlActions.indexOf(2), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(2) }
+                    if (subtitles.isNotEmpty()) PlayerIconControl(if (subtitlesShown && (subtitlesEnabled || subtitleTranslationEnabled)) Icons.Filled.ClosedCaption else Icons.Filled.ClosedCaptionOff, "Subtitles", stringResource(R.string.player_control_caption_subtitles), selected = focusedControlIndex == controlActions.indexOf(5), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(5) }
+                    if (subtitles.isNotEmpty()) PlayerIconControl(if (speechSettings.enabled) Icons.Filled.RecordVoiceOver else Icons.Filled.VoiceOverOff, "Subtitle speech", stringResource(R.string.player_control_caption_speech), selected = focusedControlIndex == controlActions.indexOf(12), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(12) }
+                    if (!channelName.isNullOrBlank()) PlayerIconControl(if (isSubscribed) Icons.Filled.Check else Icons.Filled.PersonAdd, "Subscribe", stringResource(R.string.player_control_caption_subscribe), selected = focusedControlIndex == controlActions.indexOf(6), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(6) }
+                    if (!uuid.isNullOrBlank()) PlayerIconControl(if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, "Favorite", stringResource(R.string.player_control_caption_favorite), selected = focusedControlIndex == controlActions.indexOf(7), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(7) }
+                    if (!uuid.isNullOrBlank()) PlayerIconControl(if (uuid in watchLaterState) Icons.Filled.WatchLater else Icons.Outlined.WatchLater, "Watch later", stringResource(R.string.player_control_caption_watch_later), selected = focusedControlIndex == controlActions.indexOf(11), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(11) }
+                    PlayerIconControl(Icons.Filled.HighQuality, "Playback quality settings", stringResource(R.string.player_control_caption_quality), selected = focusedControlIndex == controlActions.indexOf(8), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(8) }
+                    if (!uuid.isNullOrBlank()) PlayerIconControl(Icons.Filled.Info, "Video information", stringResource(R.string.player_control_caption_info), selected = focusedControlIndex == controlActions.indexOf(9), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(9) }
+                    if (!uuid.isNullOrBlank()) PlayerIconControl(Icons.Outlined.ChatBubbleOutline, "Comments", stringResource(R.string.player_control_caption_comments), selected = focusedControlIndex == controlActions.indexOf(10), modifier = Modifier.width(PLAYER_CONTROL_WIDTH)) { activateControl(10) }
+                }
                 }
             }
         }
@@ -1244,6 +1348,45 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                 }
                 Spacer(Modifier.weight(1f))
                 Text(stringResource(R.string.player_quality_controls_hint), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .7f), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (speechPanelOpen) {
+            val rows = listOf(
+                stringResource(R.string.speech_enabled) to stringResource(if (speechSettings.enabled) R.string.translation_on else R.string.translation_off),
+                stringResource(R.string.speech_mode) to speechModeText(speechSettings.mode),
+                stringResource(R.string.speech_language) to speechLanguageText(speechSettings.language, subtitleTranslationLanguage),
+                stringResource(R.string.speech_voice) to speechVoiceText(speechSettings.voice, speechVoices),
+                stringResource(R.string.speech_rate) to "${(speechSettings.rate * 100).roundToInt()}%",
+                stringResource(R.string.speech_pitch) to "${(speechSettings.pitch * 100).roundToInt()}%",
+                stringResource(R.string.speech_audio) to speechAudioText(speechSettings.audio),
+                stringResource(R.string.speech_duck_volume) to if (speechSettings.audio == "duck") "${speechSettings.duckPercent}%" else "—",
+                stringResource(R.string.speech_strategy) to speechStrategyText(speechSettings.strategy),
+                stringResource(R.string.speech_fallback) to speechFallbackText(speechSettings.fallback)
+            )
+            val speechScroll = rememberScrollState()
+            val rowHeightPx = with(androidx.compose.ui.platform.LocalDensity.current) { 64.dp.roundToPx() }
+            LaunchedEffect(speechPanelRow) { speechScroll.animateScrollTo((speechPanelRow * rowHeightPx - rowHeightPx * 2).coerceIn(0, speechScroll.maxValue)) }
+            Column(
+                Modifier.align(androidx.compose.ui.Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(.36f)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = .95f)).verticalScroll(speechScroll).padding(horizontal = 24.dp, vertical = 26.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(stringResource(R.string.speech_title), color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.headlineSmall)
+                Text("${stringResource(R.string.speech_status)}: ${speechStatusText(if (speechSettings.enabled) speechStatus else "off")}",
+                    color = if (speechStatus in listOf("missing_voice", "engine_error", "speech_error", "captions_error", "no_subtitles")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = .75f),
+                    style = MaterialTheme.typography.bodyMedium)
+                rows.forEachIndexed { index, (label, value) ->
+                    TextButton(
+                        onClick = { speechPanelRow = index; cycleSpeechRow(index, 1) },
+                        modifier = Modifier.fillMaxWidth().background(if (speechPanelRow == index) MaterialTheme.colorScheme.secondary.copy(alpha = .32f) else Color.Transparent, RoundedCornerShape(8.dp))
+                    ) {
+                        Column(Modifier.fillMaxWidth()) {
+                            Text(label, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(value, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .75f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                Text(stringResource(R.string.speech_panel_hint), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f), style = MaterialTheme.typography.bodySmall)
             }
         }
         if (subtitlePanelOpen) {
@@ -1355,6 +1498,8 @@ private fun isValidPeerTubeServer(value: String): Boolean {
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 }
 
+private val PLAYER_CONTROL_WIDTH = 74.dp
+
 @Composable private fun PlayerIconControl(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, caption: String, selected: Boolean = false, modifier: Modifier = Modifier, large: Boolean = false, onClick: () -> Unit) {
     Column(modifier, horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
         IconButton(onClick = onClick, modifier = Modifier.size(if (large) 54.dp else 48.dp)
@@ -1421,6 +1566,10 @@ private class RemotePlayerView(context: Context) : PlayerView(context) {
         subtitleOffsetFromBottom = bottom.coerceIn(0.02f, 0.50f)
         subtitleHorizontalPosition = horizontal.coerceIn(0.05f, 0.95f)
         applySubtitleOffset()
+    }
+
+    fun setSubtitlesShown(shown: Boolean) {
+        subtitleView?.visibility = if (shown) android.view.View.VISIBLE else android.view.View.INVISIBLE
     }
 
     fun setSubtitleAppearance(fraction: Float, colorName: String) {
