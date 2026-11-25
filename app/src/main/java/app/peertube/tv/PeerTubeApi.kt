@@ -35,7 +35,7 @@ data class VideoCaption(val language: CaptionLanguage? = null, val fileUrl: Stri
 @androidx.annotation.Keep
 data class CaptionLanguage(val id: String? = null, val label: String? = null)
 @androidx.annotation.Keep
-data class Video(val uuid: String, val name: String, val description: String? = "", val thumbnailPath: String? = null, val thumbnailUrl: String? = null, val views: Long = 0, val duration: Long = 0, val tags: List<String>? = null, val channel: Channel? = null, val account: Account? = null, val host: String? = null, val url: String? = null, val files: List<VideoFile>? = null, val streamingPlaylists: List<StreamingPlaylist>? = null, val publishedAt: String? = null, val isLive: Boolean? = null, val state: VideoState? = null, val category: VideoCategory? = null, val nsfw: Boolean = false, val previewPath: String? = null) {
+data class Video(val uuid: String, val name: String, val description: String? = "", val thumbnailPath: String? = null, val thumbnailUrl: String? = null, val views: Long = 0, val duration: Long = 0, val tags: List<String>? = null, val channel: Channel? = null, val account: Account? = null, val host: String? = null, val url: String? = null, val files: List<VideoFile>? = null, val streamingPlaylists: List<StreamingPlaylist>? = null, val publishedAt: String? = null, val isLive: Boolean? = null, val state: VideoState? = null, val category: VideoCategory? = null, val nsfw: Boolean = false, val previewPath: String? = null, val language: VideoLanguage? = null) {
     private fun allMediaFiles(): List<VideoFile> = files.orEmpty() + streamingPlaylists.orEmpty().flatMap { it.files.orEmpty() }
 
     fun isAudioOnlySource(): Boolean {
@@ -81,6 +81,8 @@ data class StreamingPlaylist(val playlistUrl: String? = null, val files: List<Vi
 data class VideoState(val id: Int? = null, val label: String? = null)
 @androidx.annotation.Keep
 data class VideoCategory(val id: Int? = null, val label: String? = null)
+@androidx.annotation.Keep
+data class VideoLanguage(val id: String? = null, val label: String? = null)
 
 private val ISO_DATE_REGEX = Regex("""^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$""")
 private val ISO_DATE_FORMATTER = object : ThreadLocal<java.text.SimpleDateFormat>() {
@@ -113,12 +115,12 @@ internal suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<
 }
 
 interface PeerTubeApi {
-    @GET("api/v1/videos") suspend fun videos(@Query("sort") sort: String = "-publishedAt", @Query("count") count: Int = 30, @Query("search") search: String? = null, @Query("isLive") isLive: Boolean? = null, @Query("includeScheduledLive") includeScheduledLive: Boolean? = null, @Query("languageOneOf[]") languageOneOf: String? = null, @Query("categoryOneOf") categoryOneOf: List<Int>? = null, @Query("isLocal") isLocal: Boolean? = null, @Query("nsfw") nsfw: String? = null, @Query("start") start: Int = 0): VideoPage
+    @GET("api/v1/videos") suspend fun videos(@Query("sort") sort: String = "-publishedAt", @Query("count") count: Int = 30, @Query("search") search: String? = null, @Query("isLive") isLive: Boolean? = null, @Query("includeScheduledLive") includeScheduledLive: Boolean? = null, @Query("languageOneOf[]") languageOneOf: List<String>? = null, @Query("categoryOneOf") categoryOneOf: List<Int>? = null, @Query("isLocal") isLocal: Boolean? = null, @Query("nsfw") nsfw: String? = null, @Query("start") start: Int = 0): VideoPage
     @GET("api/v1/search/videos") suspend fun searchVideos(@Query("search") search: String, @Query("start") start: Int = 0, @Query("count") count: Int = 40, @Query("sort") sort: String? = "-match", @Query("nsfw") nsfw: String? = null): VideoPage
     @GET("api/v1/server/following") suspend fun serverFollowing(@Query("start") start: Int = 0, @Query("count") count: Int = 20): com.google.gson.JsonObject
     @GET("api/v1/server/followers") suspend fun serverFollowers(@Query("start") start: Int = 0, @Query("count") count: Int = 20): com.google.gson.JsonObject
     @GET("api/v1/video-channels") suspend fun videoChannels(@Query("start") start: Int = 0, @Query("count") count: Int = 100): PeerTubeChannelPage
-    @GET("api/v1/video-channels/{handle}/videos") suspend fun channelVideos(@Path(value = "handle", encoded = true) handle: String, @Query("count") count: Int = 100, @Query("start") start: Int = 0): VideoPage
+    @GET("api/v1/video-channels/{handle}/videos") suspend fun channelVideos(@Path(value = "handle", encoded = true) handle: String, @Query("count") count: Int = 100, @Query("start") start: Int = 0, @Query("nsfw") nsfw: String? = null): VideoPage
     @GET("api/v1/videos/{id}") suspend fun video(@Path("id") id: String): Video
     @GET("api/v1/videos/{id}/live-session") suspend fun liveSession(@Path("id") id: String): LiveVideoSession
     @GET("api/v1/videos/{id}/captions") suspend fun captions(@Path("id") id: String): CaptionPage
@@ -149,6 +151,8 @@ interface PeerTubeConfigApi {
 
 interface SepiaSearchApi {
     @GET("api/v1/search/videos") suspend fun videos(@Query("search") search: String? = null, @Query("start") start: Int = 0, @Query("count") count: Int = 30, @Query("sort") sort: String? = null, @Query("categoryOneOf") categoryOneOf: Int? = null, @Query("durationMin") durationMin: Int? = null, @Query("durationMax") durationMax: Int? = null, @Query("isLive") isLive: Boolean? = null, @Query("includeScheduledLive") includeScheduledLive: Boolean? = null, @Query("languageOneOf[]") languageOneOf: String? = null, @Query("nsfw") nsfw: String? = null): VideoPage
+    /** Browses the whole index by category and language; Sepia Search accepts filters without a search term. */
+    @GET("api/v1/search/videos") suspend fun browse(@Query("categoryOneOf") categoryOneOf: List<Int>, @Query("languageOneOf[]") languageOneOf: List<String>? = null, @Query("start") start: Int = 0, @Query("count") count: Int = 100, @Query("sort") sort: String = "-createdAt", @Query("nsfw") nsfw: String = "false", @Query("isLive") isLive: Boolean = false): VideoPage
 }
 
 @androidx.annotation.Keep

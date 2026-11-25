@@ -55,6 +55,10 @@ class HomeModel : ViewModel() {
     var homePageDisplayMode by mutableStateOf("recommended")
         private set
     var homePageInterests by mutableStateOf<Set<Int>>(emptySet())
+    /** Video languages preferred on Home; [INTERFACE_VIDEO_LANGUAGE] follows the interface, an empty list means any language. */
+    var homeVideoLanguages by mutableStateOf(listOf(INTERFACE_VIDEO_LANGUAGE))
+    /** Interests mode also adds Sepia Search results from every PeerTube server. */
+    var homeInterestsEverywhere by mutableStateOf(false)
         private set
     var homePageServer by mutableStateOf("")
         private set
@@ -262,6 +266,9 @@ class HomeModel : ViewModel() {
         server = prefs?.getString("server", server) ?: server
         homePageDisplayMode = prefs?.getString("homeContentMode", "recommended")?.takeIf { it in homePageDisplayModes } ?: "recommended"
         homePageInterests = runCatching { PeerTubeGson.instance.fromJson<List<Int>>(prefs?.getString("homeInterests", "[]"), object : TypeToken<List<Int>>() {}.type).orEmpty().filter { it in 1..19 }.toSet() }.getOrDefault(emptySet())
+        homeVideoLanguages = prefs?.getString("homeVideoLanguages", null)?.split(',')?.filter { it == INTERFACE_VIDEO_LANGUAGE || it in homeVideoLanguageCodes }
+            ?: listOf(INTERFACE_VIDEO_LANGUAGE)
+        homeInterestsEverywhere = prefs?.getBoolean("homeInterestsEverywhere", false) == true
         homePageServer = prefs?.getString("homeServer", "").orEmpty()
         homePageChannel = prefs?.getString("homeChannel", "").orEmpty()
         gridMode = prefs?.getBoolean("gridMode", true) ?: true
@@ -411,6 +418,7 @@ class HomeModel : ViewModel() {
         val preferences = prefs ?: return
         preferences.edit().putString("server", server).putBoolean("gridMode", gridMode).putString("afterVideoAction", afterVideoAction.key)
             .putString("homeContentMode", homePageDisplayMode).putString("homeInterests", PeerTubeGson.instance.toJson(homePageInterests.sorted()))
+            .putString("homeVideoLanguages", homeVideoLanguages.joinToString(",")).putBoolean("homeInterestsEverywhere", homeInterestsEverywhere)
             .putString("homeServer", homePageServer).putString("homeChannel", homePageChannel)
             .putInt("playerOverlayDurationSeconds", playerOverlayDurationSeconds).putBoolean("showPlayerClock", showPlayerClock)
             .putString("playerClockPosition", playerClockPosition.key).putString("playerClockSize", playerClockSize.key).putString("playerClockBackdrop", playerClockBackdrop.key)
@@ -458,6 +466,59 @@ class HomeModel : ViewModel() {
         homePageConfigStatus = null
         save()
         if (tab == "home") loadHomePage()
+    }
+    /** The one rule for every feed: sensitive videos are listed only when included and not set to "Hide". */
+    fun allowSensitive(): Boolean = searchSettings.includeSensitive && searchSettings.sensitiveDisplayMode != "hide"
+    fun homeLanguages(): Set<String> = resolveHomeVideoLanguages(homeVideoLanguages, contentLanguage().orEmpty())
+    fun updateHomeVideoLanguages(value: List<String>) {
+        homeVideoLanguages = value.distinct()
+        save()
+        reloadHome()
+    }
+    fun updateHomeInterestsEverywhere(enabled: Boolean) {
+        homeInterestsEverywhere = enabled
+        save()
+        if (homePageDisplayMode == "interests") reloadHome()
+    }
+    private fun reloadHome() {
+        if (tab != "home") return
+        if (homePageDisplayMode == "recommended") load() else loadHomePage()
+    }
+    /**
+     * Home is a feed of new videos in the Recommended, Interests and Server modes, so watched videos are left out
+     * (when hiding is on), and preferred languages go first. A single channel stays complete and in its order.
+     */
+    fun forHome(items: List<Video>, mode: String = homePageDisplayMode): List<Video> {
+        val hideWatched = watchedRecommendationThreshold != "never" && mode != "channel"
+        val watched = if (hideWatched) watchedVideoIds.keys.mapTo(HashSet()) { it.lowercase() } else emptySet()
+        val visible = items.withSensitivePolicy(allowSensitive()).filterNot { it.uuid.lowercase() in watched }
+        return if (mode == "channel") visible else visible.preferVideoLanguages(homeLanguages())
+    }
+    /** Asks for the preferred languages and fills up from the unfiltered list; fails only if both requests fail. */
+    private suspend fun languageFirstPage(languages: Set<String>, limit: Int, fetch: suspend (List<String>?) -> VideoPage): VideoPage {
+        if (languages.isEmpty()) return fetch(null)
+        return kotlinx.coroutines.coroutineScope {
+            val preferred = async { runCatchingCancellable { fetch(languages.toList()) } }
+            val all = async { runCatchingCancellable { fetch(null) } }
+            val first = preferred.await()
+            val rest = all.await()
+            if (first.isFailure && rest.isFailure) throw rest.exceptionOrNull()!!
+            VideoPage(mergeLanguageFirst(first.getOrNull()?.data.orEmpty(), rest.getOrNull()?.data.orEmpty(), limit), rest.getOrNull()?.total ?: first.getOrNull()?.total ?: 0)
+        }
+    }
+    /**
+     * Interest videos from every server in the Sepia Search index, at most three per source server.
+     * The newest by publication often come from one server's bulk upload, so two pages of recently indexed videos are read.
+     */
+    private suspend fun globalInterestVideos(categories: List<Int>, allow: Boolean, languages: Set<String>): List<Video> {
+        val sepia = ApiFactory.sepiaSearch()
+        val page = languageFirstPage(languages, 400) { preferred ->
+            kotlinx.coroutines.coroutineScope {
+                val pages = listOf(0, 100).map { start -> async { sepia.browse(categories, preferred, start = start, nsfw = sensitiveContentFilter(allow)) } }.awaitAll()
+                VideoPage(pages.flatMap { it.data }, pages.maxOf { it.total })
+            }
+        }
+        return capPerServer(page.data.withSensitivePolicy(allow).map { it.copy(host = it.host ?: it.channel?.host ?: it.account?.host) }).take(60)
     }
     fun updateHomePageInterest(id: Int, enabled: Boolean) {
         if (id !in 1..19) return
@@ -515,6 +576,10 @@ class HomeModel : ViewModel() {
         val interests = homePageInterests
         val sourceServer = homePageServer
         val sourceChannel = homePageChannel
+        val allowSensitive = allowSensitive()
+        val nsfw = sensitiveContentFilter(allowSensitive)
+        val languages = homeLanguages()
+        val everywhere = homeInterestsEverywhere
         viewModelScope.launch {
             isLoadingHomePage = true
             isLoadingMoreHomePage = false
@@ -526,16 +591,26 @@ class HomeModel : ViewModel() {
                 val page = when (mode) {
                     "interests" -> {
                         require(interests.isNotEmpty()) { appContext?.getString(R.string.home_interests_empty).orEmpty() }
-                        ApiFactory.create(requestedServer).videos(count = homePagePageSize, categoryOneOf = interests.sorted(), nsfw = "false", start = 0)
+                        suspend fun local() = languageFirstPage(languages, homePagePageSize) { preferred ->
+                            ApiFactory.create(requestedServer).videos(count = homePagePageSize, categoryOneOf = interests.sorted(), nsfw = nsfw, start = 0, languageOneOf = preferred)
+                        }
+                        if (!everywhere) local() else kotlinx.coroutines.coroutineScope {
+                            val own = async { runCatchingCancellable { local() } }
+                            val global = async { runCatchingCancellable { globalInterestVideos(interests.sorted(), allowSensitive, languages) } }
+                            val ownPage = own.await()
+                            VideoPage(mergeInterestSources(ownPage.map { it.data }, global.await()), ownPage.getOrNull()?.total ?: 0)
+                        }
                     }
                     "server" -> {
                         val origin = accountServerOrigin(sourceServer.ifBlank { requestedServer })
-                        ApiFactory.create(origin).videos(count = homePagePageSize, isLocal = true, nsfw = "false", start = 0)
+                        languageFirstPage(languages, homePagePageSize) { preferred ->
+                            ApiFactory.create(origin).videos(count = homePagePageSize, isLocal = true, nsfw = nsfw, start = 0, languageOneOf = preferred)
+                        }
                     }
                     "channel" -> {
                         val channel = parseHomeChannelAddress(sourceChannel)
-                        ApiFactory.create(channel.origin).channelVideos(channel.handle, count = homePagePageSize, start = 0).let { response ->
-                            response.copy(data = response.data.filterNot { it.nsfw }.map { it.copy(host = it.host ?: channel.host) })
+                        ApiFactory.create(channel.origin).channelVideos(channel.handle, count = homePagePageSize, start = 0, nsfw = nsfw).let { response ->
+                            response.copy(data = response.data.withSensitivePolicy(allowSensitive).map { it.copy(host = it.host ?: channel.host) })
                         }
                     }
                     else -> VideoPage()
@@ -567,16 +642,18 @@ class HomeModel : ViewModel() {
         val sourceServer = homePageServer
         val sourceChannel = homePageChannel
         val start = homePageNextStart
+        val allowSensitive = allowSensitive()
+        val nsfw = sensitiveContentFilter(allowSensitive)
         viewModelScope.launch {
             isLoadingMoreHomePage = true
             try {
                 val page = when (mode) {
-                    "interests" -> ApiFactory.create(requestedServer).videos(count = homePagePageSize, categoryOneOf = interests.sorted(), nsfw = "false", start = start)
-                    "server" -> ApiFactory.create(accountServerOrigin(sourceServer.ifBlank { requestedServer })).videos(count = homePagePageSize, isLocal = true, nsfw = "false", start = start)
+                    "interests" -> ApiFactory.create(requestedServer).videos(count = homePagePageSize, categoryOneOf = interests.sorted(), nsfw = nsfw, start = start)
+                    "server" -> ApiFactory.create(accountServerOrigin(sourceServer.ifBlank { requestedServer })).videos(count = homePagePageSize, isLocal = true, nsfw = nsfw, start = start)
                     "channel" -> {
                         val channel = parseHomeChannelAddress(sourceChannel)
-                        ApiFactory.create(channel.origin).channelVideos(channel.handle, count = homePagePageSize, start = start).let { response ->
-                            response.copy(data = response.data.filterNot { it.nsfw }.map { it.copy(host = it.host ?: channel.host) })
+                        ApiFactory.create(channel.origin).channelVideos(channel.handle, count = homePagePageSize, start = start, nsfw = nsfw).let { response ->
+                            response.copy(data = response.data.withSensitivePolicy(allowSensitive).map { it.copy(host = it.host ?: channel.host) })
                         }
                     }
                     else -> VideoPage()
@@ -694,8 +771,8 @@ class HomeModel : ViewModel() {
         searchSettings = searchSettingsRepository?.read() ?: searchSettings
     }
     fun updateAvailabilityFilter(value: String) { searchSettingsRepository?.setAvailabilityFilter(value); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(availabilityFilter = value) }
-    fun updateIncludeSensitive(enabled: Boolean) { searchSettingsRepository?.setIncludeSensitive(enabled); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(includeSensitive = enabled) }
-    fun updateSensitiveDisplayMode(mode: String) { searchSettingsRepository?.setSensitiveDisplayMode(mode); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(sensitiveDisplayMode = mode) }
+    fun updateIncludeSensitive(enabled: Boolean) { searchSettingsRepository?.setIncludeSensitive(enabled); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(includeSensitive = enabled); reloadHome() }
+    fun updateSensitiveDisplayMode(mode: String) { searchSettingsRepository?.setSensitiveDisplayMode(mode); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(sensitiveDisplayMode = mode); reloadHome() }
     fun setDiscoveryOption(key: String, value: Any) {
         val d = serverDiscoveryManager ?: return
         when (key) {
@@ -1009,12 +1086,12 @@ class HomeModel : ViewModel() {
                     val host = followed.host?.trim()?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.trimEnd('.').orEmpty()
                     if (name.isBlank() || host.isBlank() || !host.matches(Regex("(?i)[a-z0-9.-]{1,253}"))) return@withPermit emptyList()
                     try {
-                        ApiFactory.create("https://$host").channelVideos("$name@$host", count = 50).data
+                        ApiFactory.create("https://$host").channelVideos("$name@$host", count = 50, nsfw = sensitiveContentFilter(allowSensitive())).data.withSensitivePolicy(allowSensitive())
                     } catch (e: kotlinx.coroutines.CancellationException) {
                         throw e
                     } catch (channelError: Exception) {
                         try {
-                            ApiFactory.create("https://$host").videos(search = name, count = 50).data.filter { video ->
+                            ApiFactory.create("https://$host").videos(search = name, count = 50, nsfw = sensitiveContentFilter(allowSensitive())).data.withSensitivePolicy(allowSensitive()).filter { video ->
                                 val channelName = video.channel?.name ?: video.account?.name
                                 val channelHost = video.channel?.host ?: video.account?.host ?: video.host.orEmpty()
                                 channelName.equals(name, ignoreCase = true) && channelHost.equals(host, ignoreCase = true)
@@ -1070,7 +1147,10 @@ class HomeModel : ViewModel() {
             }
         }
     }
-    fun load(search: String? = null) { viewModelScope.launch { try { error = null; videos = ApiFactory.create(server).videos(search = search?.let(::countrySearchTerm), languageOneOf = contentLanguage()).data; if (search == null && recommendations.isEmpty()) publishAndroidTvRecommendations(videos) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { logFailure("load failed", e); error = message(R.string.error_server, e.localizedMessage ?: appContext?.getString(R.string.error_request).orEmpty()) } } }
+    fun load(search: String? = null) { val allow = allowSensitive(); val languages = homeLanguages(); viewModelScope.launch { try { error = null
+        val api = ApiFactory.create(server)
+        videos = if (search != null) api.videos(search = countrySearchTerm(search), languageOneOf = contentLanguage()?.let(::listOf), nsfw = sensitiveContentFilter(allow)).data.withSensitivePolicy(allow)
+            else languageFirstPage(languages, 30) { preferred -> api.videos(languageOneOf = preferred, nsfw = sensitiveContentFilter(allow)) }.data.withSensitivePolicy(allow); if (search == null && recommendations.isEmpty()) publishAndroidTvRecommendations(videos) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { logFailure("load failed", e); error = message(R.string.error_server, e.localizedMessage ?: appContext?.getString(R.string.error_request).orEmpty()) } } }
     fun loadPopular() {
         val requestId = ++popularRequestId
         val requestedServer = server
@@ -1078,7 +1158,8 @@ class HomeModel : ViewModel() {
             isLoadingPopular = true
             error = null
             try {
-                val result = ApiFactory.create(requestedServer).videos(languageOneOf = contentLanguage()).data
+                val allow = allowSensitive()
+                val result = ApiFactory.create(requestedServer).videos(languageOneOf = contentLanguage()?.let(::listOf), nsfw = sensitiveContentFilter(allow)).data.withSensitivePolicy(allow)
                 if (requestId == popularRequestId && requestedServer == server) {
                     popularVideos = result
                     popularVideosServer = requestedServer
@@ -1104,8 +1185,9 @@ class HomeModel : ViewModel() {
                     start = 0,
                     count = 100,
                     sort = "-publishedAt",
-                    isLive = true
-                ).data.distinctBy { it.uuid }
+                    isLive = true,
+                    nsfw = sensitiveContentFilter(allowSensitive())
+                ).data.withSensitivePolicy(allowSensitive()).distinctBy { it.uuid }
                 // Render the live results as soon as the index responds. Per-video detail calls
                 // here used to serialize with hundreds of recent-video/session checks before the
                 // screen could show anything.
@@ -1116,7 +1198,7 @@ class HomeModel : ViewModel() {
                     // Recently ended replays are supplemental; keep this bounded and off the
                     // critical path so slow origins cannot delay the live list.
                     val candidates = runCatching {
-                        searchApi.videos(search = null, start = 0, count = 60, sort = "-publishedAt", isLive = false).data
+                        searchApi.videos(search = null, start = 0, count = 60, sort = "-publishedAt", isLive = false, nsfw = sensitiveContentFilter(allowSensitive())).data.withSensitivePolicy(allowSensitive())
                     }.getOrDefault(emptyList()).distinctBy { it.uuid }.filter { video ->
                         val published = video.publishedAt?.let(::parseIsoDateMillis)
                         published != null && published >= cutoffMillis && published <= nowMillis
@@ -1264,7 +1346,7 @@ class HomeModel : ViewModel() {
             activeChannelTitle = name
             try {
                 error = null
-                channelVideos = ApiFactory.create(serverUrl).channelVideos("$name@$normalizedHost").data
+                channelVideos = ApiFactory.create(serverUrl).channelVideos("$name@$normalizedHost", nsfw = sensitiveContentFilter(allowSensitive())).data.withSensitivePolicy(allowSensitive())
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { logFailure("loadChannelVideos failed", e);
                 error = message(R.string.error_server, e.localizedMessage ?: appContext?.getString(R.string.error_request).orEmpty())
             }
@@ -1361,7 +1443,7 @@ class HomeModel : ViewModel() {
                     val name = followed.name.trim()
                     val host = followed.host.trim().removePrefix("https://").removePrefix("http://").substringBefore('/').trimEnd('.')
                     if (name.isBlank() || !host.matches(Regex("(?i)[a-z0-9.-]{1,253}"))) return@withPermit emptyList()
-                    try { ApiFactory.create("https://$host").channelVideos("$name@$host", count = 30).data }
+                    try { ApiFactory.create("https://$host").channelVideos("$name@$host", count = 30, nsfw = sensitiveContentFilter(allowSensitive())).data.withSensitivePolicy(allowSensitive()) }
                     catch (e: kotlinx.coroutines.CancellationException) { throw e }
                     catch (error: Exception) {
                         logFailure("Channel lookup failed, falling back to search", error)
@@ -1390,7 +1472,7 @@ class HomeModel : ViewModel() {
                 if (queries.isEmpty()) { recommendations = emptyList(); return@launch }
                 val searchApi = ApiFactory.sepiaSearch()
                 val candidates = queries.map { term -> async {
-                    runCatching { searchApi.videos(search = countrySearchTerm(term), count = 20, languageOneOf = recommendationContentLanguage()).data }
+                    runCatching { searchApi.videos(search = countrySearchTerm(term), count = 20, languageOneOf = recommendationContentLanguage(), nsfw = sensitiveContentFilter(allowSensitive())).data.withSensitivePolicy(allowSensitive()) }
                         .getOrDefault(emptyList())
                 } }.awaitAll().flatten()
                 recommendations = rankRecommendations(

@@ -370,4 +370,10 @@
     <string name="search_method_move_up">ऊपर ले जाएँ</string>
     <string name="search_method_move_down">नीचे ले जाएँ</string>
     <string name="discovery_refresh_days">%1$d दिन</string>
+    <string name="home_languages">होम पर वीडियो की भाषा</string>
+    <string name="home_languages_any">कोई भी भाषा</string>
+    <string name="home_languages_interface">इंटरफ़ेस जैसी</string>
+    <string name="home_languages_hint">इन भाषाओं के वीडियो पहले दिखते हैं। सर्वर पर कम हों तो होम दूसरे वीडियो से भरा जाता है।</string>
+    <string name="home_interests_everywhere">सभी PeerTube सर्वरों पर खोजें</string>
+    <string name="home_interests_everywhere_summary">Sepia Search से दूसरे सर्वरों के इन श्रेणियों के वीडियो जोड़ता है, हर सर्वर से अधिकतम तीन।</string>
 </resources>

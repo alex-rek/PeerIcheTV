@@ -370,4 +370,10 @@
     <string name="search_method_move_up">Monter</string>
     <string name="search_method_move_down">Descendre</string>
     <string name="discovery_refresh_days">%1$d j</string>
+    <string name="home_languages">Langue des vidéos sur l’accueil</string>
+    <string name="home_languages_any">Toutes les langues</string>
+    <string name="home_languages_interface">Comme l’interface</string>
+    <string name="home_languages_hint">Les vidéos dans ces langues s’affichent en premier. Si le serveur en a peu, l’accueil est complété par d’autres vidéos.</string>
+    <string name="home_interests_everywhere">Chercher sur tous les serveurs PeerTube</string>
+    <string name="home_interests_everywhere_summary">Ajoute des vidéos de ces catégories provenant d’autres serveurs via Sepia Search, trois au plus par serveur.</string>
 </resources>

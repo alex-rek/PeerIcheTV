@@ -370,4 +370,10 @@
     <string name="search_method_move_up">نقل لأعلى</string>
     <string name="search_method_move_down">نقل لأسفل</string>
     <string name="discovery_refresh_days">%1$d يوم</string>
+    <string name="home_languages">لغة الفيديوهات في الرئيسية</string>
+    <string name="home_languages_any">أي لغة</string>
+    <string name="home_languages_interface">مثل لغة الواجهة</string>
+    <string name="home_languages_hint">تظهر الفيديوهات بهذه اللغات أولًا. إذا كان عددها قليلًا على الخادم، تُكمَل الرئيسية بفيديوهات أخرى.</string>
+    <string name="home_interests_everywhere">البحث في جميع خوادم PeerTube</string>
+    <string name="home_interests_everywhere_summary">يضيف فيديوهات من هذه الفئات من خوادم أخرى عبر Sepia Search، ثلاثة على الأكثر من كل خادم.</string>
 </resources>

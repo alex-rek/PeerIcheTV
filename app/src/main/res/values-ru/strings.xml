@@ -240,4 +240,10 @@
     <string name="search_method_move_up">Выше</string>
     <string name="search_method_move_down">Ниже</string>
     <string name="discovery_refresh_days">%1$d дн.</string>
+    <string name="home_languages">Язык видео на Главной</string>
+    <string name="home_languages_any">Любой язык</string>
+    <string name="home_languages_interface">Как язык интерфейса</string>
+    <string name="home_languages_hint">Видео на этих языках показываются первыми. Если на сервере их мало, Главная дополняется другими видео.</string>
+    <string name="home_interests_everywhere">Искать на всех серверах PeerTube</string>
+    <string name="home_interests_everywhere_summary">Добавляет видео этих категорий с других серверов через Sepia Search, не больше трёх с одного сервера.</string>
 </resources>

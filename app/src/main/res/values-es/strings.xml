@@ -374,4 +374,10 @@
     <string name="search_method_move_up">Subir</string>
     <string name="search_method_move_down">Bajar</string>
     <string name="discovery_refresh_days">%1$d d</string>
+    <string name="home_languages">Idioma de los vídeos en Inicio</string>
+    <string name="home_languages_any">Cualquier idioma</string>
+    <string name="home_languages_interface">Igual que la interfaz</string>
+    <string name="home_languages_hint">Los vídeos en estos idiomas se muestran primero. Si el servidor tiene pocos, Inicio se completa con otros vídeos.</string>
+    <string name="home_interests_everywhere">Buscar en todos los servidores de PeerTube</string>
+    <string name="home_interests_everywhere_summary">Añade vídeos de estas categorías de otros servidores mediante Sepia Search, como máximo tres por servidor.</string>
 </resources>
