@@ -376,4 +376,5 @@
     <string name="home_languages_hint">تظهر الفيديوهات بهذه اللغات أولًا. إذا كان عددها قليلًا على الخادم، تُكمَل الرئيسية بفيديوهات أخرى.</string>
     <string name="home_interests_everywhere">البحث في جميع خوادم PeerTube</string>
     <string name="home_interests_everywhere_summary">يضيف فيديوهات من هذه الفئات من خوادم أخرى عبر Sepia Search، ثلاثة على الأكثر من كل خادم.</string>
+    <string name="history_remove">إزالة من السجل</string>
 </resources>

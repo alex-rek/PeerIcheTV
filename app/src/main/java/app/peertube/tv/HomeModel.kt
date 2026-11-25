@@ -31,6 +31,10 @@ private data class SavedContentSnapshot(
     val history: List<Video>
 )
 
+private const val MAX_HISTORY = 100
+/** Server history rows read per pass, enough to recognise removals there. */
+private const val HISTORY_SYNC_ROWS = 1_000
+
 class HomeModel : ViewModel() {
     private var sepiaSearchJob: Job? = null
     private var sepiaSearchRequestId = 0
@@ -921,55 +925,123 @@ class HomeModel : ViewModel() {
         return ((watchProgressMs[video.uuid] ?: 0L).toFloat() / (video.duration * 1000f)).coerceIn(0f, 1f)
     }
     fun clearHistory() {
-        val accountId = activeAccountId
-        val remoteIds = serverHistoryUuids.toList()
         history.clear()
         historyViewedAt.clear()
         serverHistoryUuids.clear()
         recommendations = emptyList()
         save()
         prefs?.edit()?.putString("historyViewedAt", "{}")?.apply()
+        // With an account the clear is queued and reaches the server even after being offline.
+        val accountId = activeAccountId
         val context = appContext
-        if (accountId != null && context != null) viewModelScope.launch {
-            remoteIds.forEach { uuid -> runCatching { PeerTubeAccounts.get(context).deleteHistory(accountId, uuid) }
-                .onFailure { error = it.localizedMessage ?: "Could not clear server history" } }
+        if (accountId != null && context != null) {
+            HistorySyncState.queueClear(context, accountId, System.currentTimeMillis())
+            loadHistory()
         }
     }
+    /** Removes one video from History; with an account it is removed from server history too (queued while offline). */
+    fun removeFromHistory(video: Video) {
+        val key = video.uuid.lowercase()
+        history.removeAll { it.uuid.lowercase() == key }
+        historyViewedAt.keys.filter { it.lowercase() == key }.forEach { historyViewedAt.remove(it) }
+        save()
+        prefs?.edit()?.putString("historyViewedAt", PeerTubeGson.instance.toJson(historyViewedAt))?.apply()
+        queueHistoryRemovals(listOf(key))
+    }
+    fun isInHistory(video: Video): Boolean = history.any { it.uuid.equals(video.uuid, ignoreCase = true) }
+    private fun queueHistoryRemovals(uuids: Collection<String>) {
+        val accountId = activeAccountId ?: return
+        val context = appContext ?: return
+        HistorySyncState.queueRemoval(context, accountId, uuids)
+        loadHistory()
+    }
+    private var historySyncAgain = false
+    /**
+     * Keeps History in step with the active account (ported from PeerIche): a clear and removals made here are sent
+     * first, then server history is merged in. Videos watched on another device since the last pass go to the top
+     * with their position, older ones below, and videos removed on the server are removed here once the whole
+     * server list was read. Without an account, or with history turned off on the server, nothing is merged.
+     */
     fun loadHistory() {
         val accountId = activeAccountId ?: return
         val context = appContext ?: return
-        if (isLoadingHistory) return
+        if (isLoadingHistory) { historySyncAgain = true; return }
         viewModelScope.launch {
             isLoadingHistory = true
+            historySyncAgain = false
             try {
                 val accounts = PeerTubeAccounts.get(context)
-                val active = accounts.state.value.active?.takeIf { it.id == accountId } ?: return@launch
-                val remote = mutableListOf<Video>()
-                val remoteIds = linkedSetOf<String>()
-                var start = 0
-                while (start < 1_000) {
-                    val page = accounts.history(accountId, start)
-                    val rows = page.getAsJsonArray("data")?.mapNotNull { item -> runCatching {
-                        val video = PeerTubeGson.instance.fromJson(item, Video::class.java)
-                        if (video.uuid.isBlank()) null else video.copy(
-                            host = video.host ?: video.channel?.host ?: video.account?.host ?: video.url?.let { runCatching { URI(it).host }.getOrNull() } ?: URI(active.server).authority,
-                            thumbnailUrl = video.thumbnailUrl ?: video.thumbnailPath?.let { URI(active.server + "/").resolve(it).toString() }
-                        )
-                    }.getOrNull() }.orEmpty()
-                    remote += rows
-                    remoteIds += rows.map { it.uuid }
-                    start += rows.size
-                    val total = runCatching { page.get("total")?.asInt }.getOrNull() ?: start
-                    if (rows.isEmpty() || start >= total) break
+                val active = accounts.state.value.active?.takeIf { it.id == accountId && !it.needsLogin } ?: return@launch
+                val clearAt = HistorySyncState.clearRequestedAt(context, accountId)
+                if (clearAt > 0) {
+                    accounts.clearHistory(accountId, historyBeforeDate(clearAt))
+                    HistorySyncState.clearSent(context, accountId, clearAt)
                 }
-                serverHistoryUuids.clear(); serverHistoryUuids.addAll(remoteIds)
-                val localOnly = history.filterNot { it.uuid in remoteIds }
-                history.clear()
-                history.addAll((remote + localOnly).distinctBy { it.uuid }.take(100))
+                HistorySyncState.removals(context, accountId).forEach { uuid ->
+                    accounts.removeHistoryVideo(accountId, uuid)
+                    HistorySyncState.removalSent(context, accountId, uuid)
+                }
+                if (!accounts.historyEnabled(accountId)) return@launch
+                // Never merge server history over a clear that has not reached the server yet.
+                if (HistorySyncState.clearRequestedAt(context, accountId) > 0) return@launch
+                val server = active.server
+                val remote = linkedMapOf<String, Pair<Video, Long>>()
+                var start = 0
+                var complete = false
+                while (start < HISTORY_SYNC_ROWS) {
+                    val page = accounts.history(accountId, start)
+                    val rows = page.getAsJsonArray("data")?.map { it.asJsonObject } ?: throw IllegalStateException("Invalid server history")
+                    val total = page.get("total")?.asInt ?: throw IllegalStateException("Invalid server history")
+                    rows.forEach { json ->
+                        val video = runCatching { PeerTubeGson.instance.fromJson(json, Video::class.java) }.getOrNull() ?: return@forEach
+                        val key = video.uuid.lowercase()
+                        if (key.isBlank() || key in remote) return@forEach
+                        val seconds = runCatching { json.getAsJsonObject("userHistory").get("currentTime").asLong }.getOrDefault(0L)
+                        remote[key] = video.copy(
+                            host = video.host ?: video.channel?.host ?: video.account?.host ?: video.url?.let { runCatching { URI(it).host }.getOrNull() } ?: URI(server).authority,
+                            thumbnailUrl = video.thumbnailUrl ?: video.thumbnailPath?.let { URI("$server/").resolve(it).toString() }
+                        ) to seconds
+                    }
+                    start += rows.size
+                    if (start >= total) { complete = true; break }
+                    // A short page must abort: a partial list would make the rest look removed.
+                    if (rows.isEmpty()) throw IllegalStateException("Incomplete server history")
+                }
+                if (activeAccountId != accountId) return@launch
+                val plan = planHistoryImport(remote.filterValues { it.first.isLive != true }.keys.toList(), history.map { it.uuid.lowercase() }.toSet(),
+                    HistorySyncState.newest(context, accountId), HistorySyncState.removals(context, accountId),
+                    HistorySyncState.seen(context, accountId), complete, MAX_HISTORY)
+                val gone = plan.removeLocal.toSet()
+                history.removeAll { it.uuid.lowercase() in gone }
+                historyViewedAt.keys.filter { it.lowercase() in gone }.forEach { historyViewedAt.remove(it) }
+                val now = System.currentTimeMillis()
+                plan.top.asReversed().forEachIndexed { index, key ->
+                    val (video, seconds) = remote.getValue(key)
+                    val existing = history.firstOrNull { it.uuid.lowercase() == key } ?: video
+                    history.removeAll { it.uuid.lowercase() == key }
+                    history.add(0, existing)
+                    historyViewedAt[existing.uuid] = now - (plan.top.size - 1 - index)
+                    // Continue where the other device stopped.
+                    if (seconds > 0) PlaybackStateStore.updateProgress(context, existing.uuid, seconds * 1000)
+                }
+                var older = (historyViewedAt.values.minOrNull() ?: now) - 1
+                plan.bottom.forEach { key ->
+                    val video = remote.getValue(key).first
+                    history.add(video)
+                    historyViewedAt[video.uuid] = older--
+                }
+                while (history.size > MAX_HISTORY) history.removeAt(history.lastIndex)
+                serverHistoryUuids.clear(); serverHistoryUuids.addAll(remote.keys)
+                HistorySyncState.savePass(context, accountId, plan.newest, plan.seen)
                 save()
+                prefs?.edit()?.putString("historyViewedAt", PeerTubeGson.instance.toJson(historyViewedAt))?.apply()
+                syncWatchProgress()
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (failure: Exception) { error = failure.localizedMessage ?: "Could not sync server history" }
-            finally { isLoadingHistory = false }
+            catch (failure: Exception) { logFailure("loadHistory failed", failure) /* A clear and removals stay queued for the next pass. */ }
+            finally {
+                isLoadingHistory = false
+                if (historySyncAgain) loadHistory()
+            }
         }
     }
     fun markVideoViewed(uuid: String) {
@@ -984,6 +1056,7 @@ class HomeModel : ViewModel() {
         recommendations = recommendations.filterNot { it.uuid in removed }
         save()
         prefs?.edit()?.putString("historyViewedAt", PeerTubeGson.instance.toJson(historyViewedAt))?.apply()
+        queueHistoryRemovals(removed)
     }
     fun syncSubscriptions() {
         val stored = appContext?.let(LibraryStore::subscriptions) ?: return

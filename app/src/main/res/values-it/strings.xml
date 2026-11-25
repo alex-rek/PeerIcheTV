@@ -376,4 +376,5 @@
     <string name="home_languages_hint">I video in queste lingue vengono mostrati per primi. Se il server ne ha pochi, la Home viene completata con altri video.</string>
     <string name="home_interests_everywhere">Cerca su tutti i server PeerTube</string>
     <string name="home_interests_everywhere_summary">Aggiunge video di queste categorie da altri server tramite Sepia Search, al massimo tre per server.</string>
+    <string name="history_remove">Rimuovi dalla cronologia</string>
 </resources>

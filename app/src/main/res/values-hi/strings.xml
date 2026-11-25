@@ -376,4 +376,5 @@
     <string name="home_languages_hint">इन भाषाओं के वीडियो पहले दिखते हैं। सर्वर पर कम हों तो होम दूसरे वीडियो से भरा जाता है।</string>
     <string name="home_interests_everywhere">सभी PeerTube सर्वरों पर खोजें</string>
     <string name="home_interests_everywhere_summary">Sepia Search से दूसरे सर्वरों के इन श्रेणियों के वीडियो जोड़ता है, हर सर्वर से अधिकतम तीन।</string>
+    <string name="history_remove">इतिहास से हटाएँ</string>
 </resources>

@@ -376,4 +376,5 @@
     <string name="home_languages_hint">Os vídeos nestes idiomas aparecem primeiro. Se o servidor tiver poucos, o Início é completado com outros vídeos.</string>
     <string name="home_interests_everywhere">Pesquisar em todos os servidores PeerTube</string>
     <string name="home_interests_everywhere_summary">Adiciona vídeos destas categorias de outros servidores através do Sepia Search, no máximo três por servidor.</string>
+    <string name="history_remove">Remover do histórico</string>
 </resources>

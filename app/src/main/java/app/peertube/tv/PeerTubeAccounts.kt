@@ -169,6 +169,26 @@ private class PeerTubeAccountTransport(private val client: () -> OkHttpClient) {
             .post(body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build()
         execute(request, empty = true)
     }
+    /** The account server's numeric id for a video, or null when it does not know the video. */
+    suspend fun videoId(server: String, token: String, uuid: String): Long? {
+        if (!uuid.matches(Regex("[A-Za-z0-9_-]{1,128}"))) throw AccountAuthFailure("invalid_response")
+        return try {
+            runCatching { execute(request(server, "/api/v1/videos/${android.net.Uri.encode(uuid)}", token).build()).get("id").asLong }.getOrElse {
+                if (it is AccountAuthFailure) throw it else throw AccountAuthFailure("invalid_response")
+            }
+        } catch (failure: AccountAuthFailure) { if (failure.status == 404) null else throw failure }
+    }
+    suspend fun removeHistoryVideo(server: String, token: String, videoId: Long) {
+        execute(request(server, "/api/v1/users/me/history/videos/$videoId", token).delete().build(), empty = true)
+    }
+    /** Removes server history up to [beforeDate] (ISO 8601). */
+    suspend fun clearHistory(server: String, token: String, beforeDate: String) {
+        val body = JsonObject().apply { addProperty("beforeDate", beforeDate) }
+        execute(request(server, "/api/v1/users/me/history/videos/remove", token).header("Content-Type", "application/json")
+            .post(body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build(), empty = true)
+    }
+    suspend fun historyEnabled(server: String, token: String): Boolean =
+        runCatching { execute(request(server, "/api/v1/users/me", token).build()).get("videosHistoryEnabled")?.takeUnless { it.isJsonNull }?.asBoolean }.getOrNull() ?: true
     suspend fun deleteHistory(server: String, token: String, uuid: String) {
         if (!uuid.matches(Regex("[A-Za-z0-9_-]{1,128}"))) throw AccountAuthFailure("invalid_response")
         execute(request(server, "/api/v1/users/me/history/videos/${android.net.Uri.encode(uuid)}", token).delete().build(), empty = true)
@@ -358,6 +378,14 @@ internal class PeerTubeAccountManager(context: Context) {
         }
     }
     suspend fun deleteHistory(id: String, uuid: String) = withAccountToken(id) { api.deleteHistory(it.server, it.access, uuid) }
+    /** Removes one video from server history; a video the server no longer knows counts as removed. */
+    suspend fun removeHistoryVideo(id: String, uuid: String) = withAccountToken(id) { session ->
+        val videoId = api.videoId(session.server, session.access, uuid) ?: return@withAccountToken
+        try { api.removeHistoryVideo(session.server, session.access, videoId) }
+        catch (failure: AccountAuthFailure) { if (failure.status != 404) throw failure }
+    }
+    suspend fun clearHistory(id: String, beforeDate: String) = withAccountToken(id) { api.clearHistory(it.server, it.access, beforeDate) }
+    suspend fun historyEnabled(id: String): Boolean = withAccountToken(id) { api.historyEnabled(it.server, it.access) }
     suspend fun hasSubscription(id: String, handle: String): Boolean = withAccountToken(id) { api.hasSubscription(it.server, it.access, handle) }
     suspend fun subscriptionVideos(id: String, start: Int): JsonObject = withAccountToken(id) { api.subscriptionVideos(it.server, it.access, start) }
     suspend fun setSubscription(id: String, handle: String, subscribed: Boolean) = withAccountToken(id) {

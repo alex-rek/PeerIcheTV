@@ -38,7 +38,11 @@ import java.util.Locale
 @OptIn(ExperimentalFoundationApi::class)
 @Composable fun Home(m: HomeModel = viewModel()) {
     val density = LocalDensity.current
-    CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density * m.uiScale, density.fontScale)) {
+    val libraryActions = remember(m) { LibraryActions(isInHistory = m::isInHistory, removeFromHistory = m::removeFromHistory) }
+    CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density * m.uiScale, density.fontScale),
+        LocalLibraryActions provides libraryActions
+    ) {
         HomeContent(m)
     }
 }

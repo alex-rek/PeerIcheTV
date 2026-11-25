@@ -246,4 +246,5 @@
     <string name="home_languages_hint">Videos in these languages are shown first. If the server has few of them, Home is filled with other videos.</string>
     <string name="home_interests_everywhere">Search all PeerTube servers</string>
     <string name="home_interests_everywhere_summary">Adds videos in these categories from other servers via Sepia Search, at most three per server.</string>
+    <string name="history_remove">Remove from history</string>
 </resources>

@@ -376,4 +376,5 @@
     <string name="home_languages_hint">これらの言語の動画を先に表示します。サーバーに少ない場合は、他の動画でホームを補います。</string>
     <string name="home_interests_everywhere">すべての PeerTube サーバーで探す</string>
     <string name="home_interests_everywhere_summary">Sepia Search で他のサーバーからこれらのカテゴリの動画を追加します（1 サーバーあたり最大 3 本）。</string>
+    <string name="history_remove">履歴から削除</string>
 </resources>

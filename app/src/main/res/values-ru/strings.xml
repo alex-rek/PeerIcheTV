@@ -246,4 +246,5 @@
     <string name="home_languages_hint">Видео на этих языках показываются первыми. Если на сервере их мало, Главная дополняется другими видео.</string>
     <string name="home_interests_everywhere">Искать на всех серверах PeerTube</string>
     <string name="home_interests_everywhere_summary">Добавляет видео этих категорий с других серверов через Sepia Search, не больше трёх с одного сервера.</string>
+    <string name="history_remove">Удалить из истории</string>
 </resources>

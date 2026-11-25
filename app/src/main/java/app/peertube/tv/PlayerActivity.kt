@@ -588,6 +588,8 @@ private fun isValidPeerTubeServer(value: String): Boolean {
                         accounts.state.value.active?.takeIf { !it.needsLogin }?.let { account ->
                             runCatching {
                                 accounts.notifyWatching(account.id, server, uuid, (player.currentPosition / 1_000L).toInt(), trackingSessionId)
+                                // This view is now the newest server entry; History sync must not take it for another device's.
+                                HistorySyncState.noteView(context, account.id, uuid)
                             }
                         }
                     }

@@ -106,6 +106,10 @@ import java.text.SimpleDateFormat
     }
 }
 
+/** Library actions the video menu offers wherever a card is shown, provided by the Home screen. */
+internal class LibraryActions(val isInHistory: (Video) -> Boolean, val removeFromHistory: (Video) -> Unit)
+internal val LocalLibraryActions = androidx.compose.runtime.staticCompositionLocalOf<LibraryActions?> { null }
+
 @Composable
 internal fun VideoContextMenu(
     video: Video,
@@ -165,6 +169,12 @@ internal fun VideoContextMenu(
                         }
                         TextButton(onClick = onMarkWatched, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.mark_watched), modifier = Modifier.fillMaxWidth())
+                        }
+                        val library = LocalLibraryActions.current
+                        if (library != null && library.isInHistory(video)) {
+                            TextButton(onClick = { library.removeFromHistory(video); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.history_remove), modifier = Modifier.fillMaxWidth())
+                            }
                         }
                     }
                 }
