@@ -777,6 +777,8 @@ class HomeModel : ViewModel() {
     fun updateAvailabilityFilter(value: String) { searchSettingsRepository?.setAvailabilityFilter(value); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(availabilityFilter = value) }
     fun updateIncludeSensitive(enabled: Boolean) { searchSettingsRepository?.setIncludeSensitive(enabled); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(includeSensitive = enabled); reloadHome() }
     fun updateSensitiveDisplayMode(mode: String) { searchSettingsRepository?.setSensitiveDisplayMode(mode); searchSettings = searchSettingsRepository?.read() ?: searchSettings.copy(sensitiveDisplayMode = mode); reloadHome() }
+    /** Bumped on every change so Settings recomposes: [discoverySettings] reads plain SharedPreferences. */
+    private var discoveryRevision by mutableIntStateOf(0)
     fun setDiscoveryOption(key: String, value: Any) {
         val d = serverDiscoveryManager ?: return
         when (key) {
@@ -791,8 +793,9 @@ class HomeModel : ViewModel() {
             "json_enabled" -> d.setRemoteJsonEnabled(value as Boolean)
             "catalog_url" -> d.setServerJsonUrl(value as String)
         }
+        discoveryRevision++
     }
-    fun discoverySettings() = serverDiscoveryManager?.settings() ?: DiscoverySettings()
+    fun discoverySettings() = discoveryRevision.let { serverDiscoveryManager?.settings() ?: DiscoverySettings() }
     fun serverJsonCatalogUrl() = serverDiscoveryManager?.serverJsonUrl().orEmpty()
     fun serversForSearch(): List<DiscoveredServer> {
         val d = discoverySettings()
