@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ColumnScope.HomeFeedTab(m: HomeModel, ui: HomeUiState, actions: HomeActions) {
-    val savedHomeVideoId = ui.lastFocusedCardBySection["home"]
+    val savedHomeVideoId = ui.focusRestoreRevision.let { ui.lastFocusedCardBySection["home"] }
     val customHomeTitle = stringResource(when (m.homePageDisplayMode) {
         "interests" -> R.string.home_mode_interests
         "server" -> R.string.home_mode_server

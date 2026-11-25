@@ -143,6 +143,9 @@ import java.util.Locale
                 m.syncFavorites()
                 m.syncSubscriptions()
                 if (m.tab == "history") m.loadHistory()
+                // A video watched meanwhile leaves Home and Recommendations; put focus back on a card instead of
+                // letting it fall to the top bar or the section menu.
+                if ((m.tab == "home" || m.tab == "recommendations") && !ui.menuExpanded && !ui.settingsOverlay) ui.sectionFocusPending = true
             }
         }
         lifecycleOwner?.lifecycle?.addObserver(observer)
@@ -165,21 +168,44 @@ import java.util.Locale
     LaunchedEffect(ui.menuExpanded, ui.sectionFocusPending, ui.homeInitialized, m.tab, m.videos.size, m.homePageVideos.size, m.recommendations.size, m.popularVideos.size, m.liveVideos.size, m.channelVideos.size, m.serverChannels.size, m.subscriptionVideos.size, m.instances.size, ui.lastFocusedCardBySection[m.tab], m.homePageDisplayMode) {
         if (!ui.menuExpanded && ui.sectionFocusPending) {
             kotlinx.coroutines.delay(280)
+            // Home shows filtered lists (a video just watched leaves it), so focus is matched against what is shown.
+            val shownRecommendations = if (m.tab == "home") m.forHome(m.sortVideos(m.recommendations), "recommended") else emptyList()
+            val shownLatest = if (m.tab == "home") m.forHome(m.sortVideos(m.videos), "recommended") else emptyList()
+            val shownGrid = if (m.tab == "home") m.forHome(m.sortVideos(m.homePageVideos)) else emptyList()
+            val stored = ui.lastFocusedCardBySection[m.tab]
+            if (stored != null && (m.tab == "home" || m.tab == "recommendations")) {
+                val replacement = when {
+                    m.tab == "recommendations" -> nearestShownVideo(m.sortVideos(m.recommendations), m.forHome(m.sortVideos(m.recommendations), "recommended"), stored)
+                    m.homePageDisplayMode == "recommended" -> nearestShownVideo(m.sortVideos(m.recommendations), shownRecommendations, stored)
+                        ?: nearestShownVideo(m.sortVideos(m.videos), shownLatest, stored)
+                    else -> nearestShownVideo(m.sortVideos(m.homePageVideos), shownGrid, stored)
+                }
+                // The card that took the hidden one's place gets the focus, so the user keeps their place.
+                if (replacement != null && replacement != stored) {
+                    ui.lastFocusedCardBySection[m.tab] = replacement
+                    ui.focusRestoreRevision++
+                    kotlinx.coroutines.delay(150)
+                }
+            }
             val rememberedId = ui.lastFocusedCardBySection[m.tab]
             val target = when {
-                m.tab == "home" && m.homePageDisplayMode == "recommended" && rememberedId != null && m.recommendations.any { it.uuid == rememberedId } -> ui.homeRecommendationRestoreFocusRequester
-                m.tab == "home" && m.homePageDisplayMode == "recommended" && rememberedId != null && m.videos.any { it.uuid == rememberedId } -> ui.homeLatestRestoreFocusRequester
-                m.tab == "home" && m.homePageDisplayMode != "recommended" && rememberedId != null && m.homePageVideos.any { it.uuid == rememberedId } -> ui.homeGridRestoreFocusRequester
+                m.tab == "home" && m.homePageDisplayMode == "recommended" && rememberedId != null && shownRecommendations.any { it.uuid == rememberedId } -> ui.homeRecommendationRestoreFocusRequester
+                m.tab == "home" && m.homePageDisplayMode == "recommended" && rememberedId != null && shownLatest.any { it.uuid == rememberedId } -> ui.homeLatestRestoreFocusRequester
+                m.tab == "home" && m.homePageDisplayMode != "recommended" && rememberedId != null && shownGrid.any { it.uuid == rememberedId } -> ui.homeGridRestoreFocusRequester
                 m.tab == "sepia" && rememberedId != null && m.videos.any { it.uuid == rememberedId } -> ui.searchRestoreFocusRequester
                 rememberedId != null -> ui.sectionRestoreFocusRequester
-                m.tab == "home" -> if (m.recommendations.isEmpty()) ui.homeLatestFirstCardFocusRequester else ui.homeFirstCardFocusRequester
+                m.tab == "home" -> homeFirstCard(m, ui, shownRecommendations)
                 else -> ui.sectionFirstFocusRequester
             }
-            val focused = runCatching { target.requestFocus() }.getOrDefault(false)
+            // A card that has just become the target may need a few frames to compose with its focus requester.
+            var focused = false
+            for (attempt in 0 until 4) {
+                focused = runCatching { target.requestFocus() }.getOrDefault(false)
+                if (focused || rememberedId == null) break
+                kotlinx.coroutines.delay(120)
+            }
             if (!focused) {
-                val fallback = if (m.tab == "home") {
-                    if (m.recommendations.isEmpty()) ui.homeLatestFirstCardFocusRequester else ui.homeFirstCardFocusRequester
-                } else if (m.tab == "sepia") ui.firstSearchResultFocusRequester else ui.sectionFirstFocusRequester
+                val fallback = if (m.tab == "home") homeFirstCard(m, ui, shownRecommendations) else if (m.tab == "sepia") ui.firstSearchResultFocusRequester else ui.sectionFirstFocusRequester
                 if (runCatching { fallback.requestFocus() }.getOrDefault(false)) ui.sectionFocusPending = false
             } else ui.sectionFocusPending = false
         }
@@ -510,4 +536,19 @@ import java.util.Locale
     }
     HomeTopBar(m, ui, search, accountState)
     }
+}
+
+/** The first Home card: the grid in Interests, Server and Channel modes, otherwise recommendations or, without them, latest videos. */
+private fun homeFirstCard(m: HomeModel, ui: HomeUiState, shownRecommendations: List<Video>) = when {
+    m.homePageDisplayMode != "recommended" -> ui.homeFirstCardFocusRequester
+    shownRecommendations.isEmpty() -> ui.homeLatestFirstCardFocusRequester
+    else -> ui.homeFirstCardFocusRequester
+}
+
+/** [id] if it is shown, else the nearest shown video after it in [all] (then before it), or null if [id] is unknown. */
+internal fun nearestShownVideo(all: List<Video>, shown: List<Video>, id: String): String? {
+    if (shown.any { it.uuid == id }) return id
+    val index = all.indexOfFirst { it.uuid == id }.takeIf { it >= 0 } ?: return null
+    val visible = shown.mapTo(HashSet()) { it.uuid }
+    return (all.drop(index + 1) + all.take(index).asReversed()).firstOrNull { it.uuid in visible }?.uuid
 }

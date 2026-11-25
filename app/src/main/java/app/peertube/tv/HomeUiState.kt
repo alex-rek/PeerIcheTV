@@ -32,6 +32,8 @@ internal class HomeUiState {
     var collapsedMenuItemFocused by mutableStateOf(false)
     var focusedVideoAtLeftBoundary by mutableStateOf(false)
     var sectionFocusPending by mutableStateOf(false)
+    /** Bumped when the remembered card is replaced, so lists pick up the new focus target ([lastFocusedCardBySection] is not observable). */
+    var focusRestoreRevision by mutableIntStateOf(0)
     var searchResultFocusPending by mutableStateOf(false)
     var returnSearchFocusPending by mutableStateOf(false)
     var searchButtonFocused by mutableStateOf(false)
