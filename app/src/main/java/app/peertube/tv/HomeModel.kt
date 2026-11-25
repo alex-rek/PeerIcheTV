@@ -488,13 +488,14 @@ class HomeModel : ViewModel() {
         if (tab != "home") return
         if (homePageDisplayMode == "recommended") load() else loadHomePage()
     }
+    /** As in PeerIche: every video in History counts as watched, and so does one marked "Watched". Lower-case UUIDs. */
+    fun watchedForFeeds(): Set<String> = (history.map { it.uuid } + watchedVideoIds.keys).mapTo(HashSet()) { it.lowercase() }
     /**
-     * Home is a feed of new videos in the Recommended, Interests and Server modes, so watched videos are left out
-     * (when hiding is on), and preferred languages go first. A single channel stays complete and in its order.
+     * Home is a feed of new videos in the Recommended, Interests and Server modes, so watched videos are left out,
+     * and preferred languages go first. A single channel stays complete and in its order.
      */
     fun forHome(items: List<Video>, mode: String = homePageDisplayMode): List<Video> {
-        val hideWatched = watchedRecommendationThreshold != "never" && mode != "channel"
-        val watched = if (hideWatched) watchedVideoIds.keys.mapTo(HashSet()) { it.lowercase() } else emptySet()
+        val watched = if (mode != "channel") watchedForFeeds() else emptySet()
         val visible = items.withSensitivePolicy(allowSensitive()).filterNot { it.uuid.lowercase() in watched }
         return if (mode == "channel") visible else visible.preferVideoLanguages(homeLanguages())
     }
@@ -727,7 +728,6 @@ class HomeModel : ViewModel() {
     fun updateWatchedRecommendationThreshold(threshold: String) {
         watchedRecommendationThreshold = threshold.takeIf { it in setOf("never", "percent_5", "percent_10", "percent_50", "complete") } ?: "never"
         save()
-        recommendations = if (watchedRecommendationThreshold == "never") recommendations else recommendations.filterNot { it.uuid in watchedVideoIds }
         loadRecommendations()
     }
     fun updateExitMode(mode: String) { exitMode = mode.takeIf { it == "none" || it == "single" || it == "double" } ?: "none"; prefs?.edit()?.putBoolean("exitModeUserSelected", true)?.putBoolean("exitModeDefaultInitialized", true)?.apply(); save() }
@@ -918,7 +918,7 @@ class HomeModel : ViewModel() {
         watchProgressMs.putAll(appContext?.let { PlaybackStateStore.progressSnapshot(it) }.orEmpty())
         watchedVideoIds.clear()
         appContext?.let { PlaybackStateStore.watchedSnapshot(it) }.orEmpty().forEach { watchedVideoIds[it] = true }
-        if (watchedRecommendationThreshold != "never") recommendations = recommendations.filterNot { it.uuid in watchedVideoIds }
+        recommendations = recommendations.filterNot { it.uuid.lowercase() in watchedForFeeds() }
     }
     fun watchProgressFraction(video: Video): Float {
         if (video.duration <= 0) return 0f
@@ -1549,8 +1549,8 @@ class HomeModel : ViewModel() {
                         .getOrDefault(emptyList())
                 } }.awaitAll().flatten()
                 recommendations = rankRecommendations(
-                    candidates, watched, excludedIds = excludedRecommendationIds.toSet(), watchedIds = watchedVideoIds.keys.toSet(),
-                    hideWatched = watchedRecommendationThreshold != "never", countryCode = searchCountryCode
+                    candidates, watched, excludedIds = excludedRecommendationIds.toSet(), watchedIds = watchedForFeeds() + history.map { it.uuid } + watchedVideoIds.keys,
+                    hideWatched = true, countryCode = searchCountryCode
                 )
                 if (recommendations.isNotEmpty()) publishAndroidTvRecommendations(recommendations)
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { logFailure("loadRecommendations failed", e); error = message(R.string.error_recommendations, e.localizedMessage ?: appContext?.getString(R.string.error_request).orEmpty()) }

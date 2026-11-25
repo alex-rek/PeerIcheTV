@@ -452,20 +452,6 @@ internal fun SettingsDashboard(
                                         seconds.toString() to "${String.format(Locale.ROOT, "%.1f", seconds).removeSuffix(".0")} ${stringResource(R.string.seconds_short)}"
                                     }
                                 ) { model.updateContextMenuHoldSeconds(it.toFloat()) }
-                                val watchedThresholdLabel = stringResource(when (model.watchedRecommendationThreshold) {
-                                    "percent_5" -> R.string.watched_threshold_5_percent
-                                    "percent_10" -> R.string.watched_threshold_10_percent
-                                    "percent_50" -> R.string.watched_threshold_50_percent
-                                    "complete" -> R.string.watched_threshold_100_percent
-                                    else -> R.string.watched_threshold_never
-                                })
-                                SettingsChoice(stringResource(R.string.hide_watched_recommendations), watchedThresholdLabel, listOf(
-                                    "never" to stringResource(R.string.watched_threshold_never),
-                                    "percent_5" to stringResource(R.string.watched_threshold_5_percent),
-                                    "percent_10" to stringResource(R.string.watched_threshold_10_percent),
-                                    "percent_50" to stringResource(R.string.watched_threshold_50_percent),
-                                    "complete" to stringResource(R.string.watched_threshold_100_percent)
-                                )) { model.updateWatchedRecommendationThreshold(it) }
                                 val recommendationBasisLabel = stringResource(when (model.recommendationBasis) {
                                     "subscriptions" -> R.string.recommendations_basis_subscriptions
                                     "both" -> R.string.recommendations_basis_both

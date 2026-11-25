@@ -32,9 +32,9 @@ internal fun ColumnScope.HomeFeedTab(m: HomeModel, ui: HomeUiState, actions: Hom
     })
     if (m.homePageDisplayMode == "recommended") {
         val homeShelvesListState = rememberLazyListState()
-        val latestVideos = remember(m.videos, m.videoSortMode, m.homeVideoLanguages, m.watchedVideoIds.size, m.searchSettings, m.watchedRecommendationThreshold) { m.forHome(m.sortVideos(m.videos), "recommended") }
+        val latestVideos = remember(m.videos, m.videoSortMode, m.homeVideoLanguages, m.watchedVideoIds.size, m.searchSettings, m.history.size) { m.forHome(m.sortVideos(m.videos), "recommended") }
         val latestCardRequesters = remember(latestVideos.map { it.uuid }) { latestVideos.map { FocusRequester() } }
-        val recommendationVideos = remember(m.recommendations, m.videoSortMode, m.homeVideoLanguages, m.searchSettings) { m.forHome(m.sortVideos(m.recommendations), "recommended") }
+        val recommendationVideos = remember(m.recommendations, m.videoSortMode, m.homeVideoLanguages, m.searchSettings, m.watchedVideoIds.size, m.history.size) { m.forHome(m.sortVideos(m.recommendations), "recommended") }
         val recommendationDownRequesters = remember(recommendationVideos.map { it.uuid }, latestVideos.map { it.uuid }) {
             recommendationVideos.indices.map { index -> latestCardRequesters.getOrNull(index.coerceAtMost((latestCardRequesters.size - 1).coerceAtLeast(0))) }
         }
@@ -97,7 +97,7 @@ internal fun ColumnScope.HomeFeedTab(m: HomeModel, ui: HomeUiState, actions: Hom
         }
         }
     } else {
-        val sortedHomePageVideos = remember(m.homePageVideos, m.videoSortMode, m.homePageDisplayMode, m.homeVideoLanguages, m.watchedVideoIds.size, m.searchSettings, m.watchedRecommendationThreshold) { m.forHome(m.sortVideos(m.homePageVideos)) }
+        val sortedHomePageVideos = remember(m.homePageVideos, m.videoSortMode, m.homePageDisplayMode, m.homeVideoLanguages, m.watchedVideoIds.size, m.searchSettings, m.history.size) { m.forHome(m.sortVideos(m.homePageVideos)) }
         val homeGridState = rememberLazyGridState()
             val homeVideoStartIndex = 1 + (if (m.isLoadingHomePage) 1 else 0) + (if (!m.homePageError.isNullOrBlank()) 1 else 0)
             LaunchedEffect(ui.sectionFocusPending, savedHomeVideoId, sortedHomePageVideos.size, homeVideoStartIndex) {
