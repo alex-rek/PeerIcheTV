@@ -34,7 +34,8 @@ internal fun List<Video>.preferVideoLanguages(languages: Set<String>): List<Vide
     }
 }
 
-private fun Video.identityKey(): String = "${(host ?: "").lowercase()}|${uuid.lowercase()}"
+/** Lists are keyed by UUID on screen, so one video must appear once even if two sources fill its host differently. */
+private fun Video.identityKey(): String = uuid.lowercase()
 
 /** The language-filtered request first, filled up from the unfiltered one, without duplicates. */
 internal fun mergeLanguageFirst(preferred: List<Video>, others: List<Video>, limit: Int): List<Video> =

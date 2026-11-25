@@ -57,7 +57,7 @@ internal fun ColumnScope.VideoSectionTab(m: HomeModel, ui: HomeUiState, actions:
             if (m.isLoadingRecommendations) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 8.dp))
         }
     }
-    val rows = m.sortVideos(when(m.tab) { "popular" -> m.popularVideos; "history" -> m.history.toList(); "favorites" -> m.favorites.toList(); "watch_later" -> watchLater.videos; "user_playlist" -> openedPlaylist?.list?.items?.map { it.video }.orEmpty(); "recommendations" -> m.forHome(m.recommendations, "recommended"); "subscriptions" -> m.subscriptionVideos; "live" -> m.liveVideos; "channel" -> m.channelVideos; else -> m.videos })
+    val rows = m.sortVideos(when(m.tab) { "popular" -> m.popularVideos; "history" -> m.history.toList(); "favorites" -> m.favorites.toList(); "watch_later" -> watchLater.videos; "user_playlist" -> openedPlaylist?.list?.items?.map { it.video }.orEmpty(); "recommendations" -> m.forHome(m.recommendations, "recommended"); "subscriptions" -> m.subscriptionVideos; "live" -> m.liveVideos; "channel" -> m.channelVideos; else -> m.videos }).distinctBy { it.uuid }
     val savedSectionVideoId = ui.lastFocusedCardBySection[m.tab]
     m.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     if (m.tab == "recommendations" && rows.isEmpty() && !m.isLoadingRecommendations && m.error == null) Text(stringResource(R.string.recommendations_empty), modifier = Modifier.padding(16.dp))

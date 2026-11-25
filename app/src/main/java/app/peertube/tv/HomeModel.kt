@@ -496,7 +496,7 @@ class HomeModel : ViewModel() {
      */
     fun forHome(items: List<Video>, mode: String = homePageDisplayMode): List<Video> {
         val watched = if (mode != "channel") watchedForFeeds() else emptySet()
-        val visible = items.withSensitivePolicy(allowSensitive()).filterNot { it.uuid.lowercase() in watched }
+        val visible = items.withSensitivePolicy(allowSensitive()).filterNot { it.uuid.lowercase() in watched }.distinctBy { it.uuid }
         return if (mode == "channel") visible else visible.preferVideoLanguages(homeLanguages())
     }
     /** Asks for the preferred languages and fills up from the unfiltered list; fails only if both requests fail. */
