@@ -494,8 +494,8 @@ class HomeModel : ViewModel() {
      * Home is a feed of new videos in the Recommended, Interests and Server modes, so watched videos are left out,
      * and preferred languages go first. A single channel stays complete and in its order.
      */
-    fun forHome(items: List<Video>, mode: String = homePageDisplayMode): List<Video> {
-        val watched = if (mode != "channel") watchedForFeeds() else emptySet()
+    fun forHome(items: List<Video>, mode: String = homePageDisplayMode, hideWatched: Boolean = true): List<Video> {
+        val watched = if (hideWatched && mode != "channel") watchedForFeeds() else emptySet()
         val visible = items.withSensitivePolicy(allowSensitive()).filterNot { it.uuid.lowercase() in watched }.distinctBy { it.uuid }
         return if (mode == "channel") visible else visible.preferVideoLanguages(homeLanguages())
     }
