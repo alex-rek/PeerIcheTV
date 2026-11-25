@@ -609,13 +609,16 @@ internal fun SettingsDashboard(
                                         ))
                                     })
                                 }
+                                // Proxy details matter only while the proxy is on.
+                                if (proxyEnabled) {
                                 SettingsChoice(stringResource(R.string.proxy_type), stringResource(if (proxyType == "socks5") R.string.proxy_socks5 else R.string.proxy_http), listOf(
                                     "http" to stringResource(R.string.proxy_http), "socks5" to stringResource(R.string.proxy_socks5)
                                 )) { proxyType = it }
-                                OutlinedTextField(value = proxyHost, onValueChange = { proxyHost = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.proxy_host)) })
-                                OutlinedTextField(value = proxyPort, onValueChange = { proxyPort = it.filter(Char::isDigit).take(5) }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.proxy_port)) })
-                                OutlinedTextField(value = proxyUsername, onValueChange = { proxyUsername = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.proxy_username)) })
-                                OutlinedTextField(value = proxyPassword, onValueChange = { proxyPassword = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.proxy_password)) }, visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                                TvRemoteTextField(proxyHost, { proxyHost = it }, stringResource(R.string.proxy_host), Modifier.fillMaxWidth(), keyboardLayout = TvKeyboardLayout.URL)
+                                TvRemoteTextField(proxyPort, { proxyPort = it.filter(Char::isDigit).take(5) }, stringResource(R.string.proxy_port), Modifier.fillMaxWidth(), keyboardLayout = TvKeyboardLayout.NUMBER)
+                                TvRemoteTextField(proxyUsername, { proxyUsername = it }, stringResource(R.string.proxy_username), Modifier.fillMaxWidth())
+                                TvRemoteTextField(proxyPassword, { proxyPassword = it }, stringResource(R.string.proxy_password), Modifier.fillMaxWidth(), keyboardLayout = TvKeyboardLayout.PASSWORD, visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                                }
                                 Button(onClick = {
                                     val port = proxyPort.toIntOrNull() ?: 0
                                     val settings = NetworkProxySettings(proxyEnabled, proxyType, proxyHost.trim(), port, proxyUsername, proxyPassword)
@@ -644,7 +647,7 @@ internal fun SettingsDashboard(
                                         proxyCheckRunning = false
                                     }
                                 }, enabled = !proxyCheckRunning && (!proxyEnabled || (proxyHost.isNotBlank() && proxyPort.toIntOrNull() in 1..65535)), modifier = Modifier.fillMaxWidth()) {
-                                    Text(if (proxyCheckRunning) stringResource(R.string.proxy_checking) else stringResource(R.string.proxy_apply))
+                                    Text(if (proxyCheckRunning) stringResource(R.string.proxy_checking) else stringResource(R.string.proxy_apply), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                 }
                                 proxyCheckStatus?.let { status ->
                                     Text(status, style = MaterialTheme.typography.bodySmall, color = when (proxyCheckPassed) {
@@ -665,7 +668,7 @@ internal fun SettingsDashboard(
                                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                         Image(painterResource(LocalPeerIcheTheme.current.logoResource), contentDescription = stringResource(R.string.app_name), contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(84.dp).padding(horizontal = 10.dp))
                                         Text("v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyLarge)
-                                        Text(stringResource(R.string.about_version_date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(stringResource(R.string.about_version_date, releaseDateText()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Button(onClick = onCheckForUpdates, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.update_check_action)) }
                                     }
                                     Text(stringResource(R.string.about_artic_fox), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
@@ -728,5 +731,17 @@ internal fun SettingsChoice(title: String, selected: String, options: List<Pair<
                 }
             }
         }
+    }
+}
+
+/** Release date of this build (BuildConfig.RELEASE_DATE, yyyy-MM-dd) in the interface language. */
+@Composable
+private fun releaseDateText(): String {
+    val locale = currentLocale()
+    return remember(locale) {
+        runCatching {
+            val date = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(BuildConfig.RELEASE_DATE)!!
+            java.text.DateFormat.getDateInstance(java.text.DateFormat.LONG, locale).format(date)
+        }.getOrDefault(BuildConfig.RELEASE_DATE)
     }
 }
