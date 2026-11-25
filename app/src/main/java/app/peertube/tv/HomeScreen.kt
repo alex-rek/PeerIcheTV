@@ -174,11 +174,14 @@ import java.util.Locale
             val shownGrid = if (m.tab == "home") m.forHome(m.sortVideos(m.homePageVideos)) else emptyList()
             val stored = ui.lastFocusedCardBySection[m.tab]
             if (stored != null && (m.tab == "home" || m.tab == "recommendations")) {
+                // Neighbours are taken in screen order (the same list with watched videos kept), since language
+                // preference reorders Home and the raw order would point far away.
+                fun inScreenOrder(items: List<Video>, mode: String = m.homePageDisplayMode) = m.forHome(m.sortVideos(items), mode, hideWatched = false)
                 val replacement = when {
-                    m.tab == "recommendations" -> nearestShownVideo(m.sortVideos(m.recommendations), m.forHome(m.sortVideos(m.recommendations), "recommended"), stored)
-                    m.homePageDisplayMode == "recommended" -> nearestShownVideo(m.sortVideos(m.recommendations), shownRecommendations, stored)
-                        ?: nearestShownVideo(m.sortVideos(m.videos), shownLatest, stored)
-                    else -> nearestShownVideo(m.sortVideos(m.homePageVideos), shownGrid, stored)
+                    m.tab == "recommendations" -> nearestShownVideo(inScreenOrder(m.recommendations, "recommended"), m.forHome(m.sortVideos(m.recommendations), "recommended"), stored)
+                    m.homePageDisplayMode == "recommended" -> nearestShownVideo(inScreenOrder(m.recommendations, "recommended"), shownRecommendations, stored)
+                        ?: nearestShownVideo(inScreenOrder(m.videos, "recommended"), shownLatest, stored)
+                    else -> nearestShownVideo(inScreenOrder(m.homePageVideos), shownGrid, stored)
                 }
                 // The card that took the hidden one's place gets the focus, so the user keeps their place.
                 if (replacement != null && replacement != stored) {
