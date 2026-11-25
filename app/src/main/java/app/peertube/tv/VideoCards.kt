@@ -106,6 +106,10 @@ import java.text.SimpleDateFormat
     }
 }
 
+/** Library actions the video menu offers wherever a card is shown, provided by the Home screen. */
+internal class LibraryActions(val isInHistory: (Video) -> Boolean, val removeFromHistory: (Video) -> Unit)
+internal val LocalLibraryActions = androidx.compose.runtime.staticCompositionLocalOf<LibraryActions?> { null }
+
 @Composable
 internal fun VideoContextMenu(
     video: Video,
@@ -122,6 +126,7 @@ internal fun VideoContextMenu(
     val title = video.name
     val context = LocalContext.current
     val watchLater by WatchLater.state.collectAsState()
+    var playlistPicker by remember { mutableStateOf(false) }
     val initialMenuFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { initialMenuFocus.requestFocus() } }
     Dialog(
@@ -157,6 +162,9 @@ internal fun VideoContextMenu(
                         TextButton(onClick = { WatchLater.toggle(context, video); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(if (video.uuid in watchLater) R.string.watch_later_remove else R.string.watch_later_add), modifier = Modifier.fillMaxWidth())
                         }
+                        TextButton(onClick = { playlistPicker = true }, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.playlist_add), modifier = Modifier.fillMaxWidth())
+                        }
                         TextButton(onClick = onChannel, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.open_channel), modifier = Modifier.fillMaxWidth())
                         }
@@ -166,11 +174,18 @@ internal fun VideoContextMenu(
                         TextButton(onClick = onMarkWatched, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.mark_watched), modifier = Modifier.fillMaxWidth())
                         }
+                        val library = LocalLibraryActions.current
+                        if (library != null && library.isInHistory(video)) {
+                            TextButton(onClick = { library.removeFromHistory(video); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.history_remove), modifier = Modifier.fillMaxWidth())
+                            }
+                        }
                     }
                 }
             }
         }
     }
+    if (playlistPicker) PlaylistPickerDialog(video) { playlistPicker = false; onDismiss() }
 }
 
 @Composable internal fun VideoThumbnail(video: Video, server: String, modifier: Modifier = Modifier, progress: Float = 0f) {

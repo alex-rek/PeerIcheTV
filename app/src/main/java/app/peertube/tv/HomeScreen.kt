@@ -38,7 +38,11 @@ import java.util.Locale
 @OptIn(ExperimentalFoundationApi::class)
 @Composable fun Home(m: HomeModel = viewModel()) {
     val density = LocalDensity.current
-    CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density * m.uiScale, density.fontScale)) {
+    val libraryActions = remember(m) { LibraryActions(isInHistory = m::isInHistory, removeFromHistory = m::removeFromHistory) }
+    CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density * m.uiScale, density.fontScale),
+        LocalLibraryActions provides libraryActions
+    ) {
         HomeContent(m)
     }
 }
@@ -189,7 +193,7 @@ import java.util.Locale
         else if (ui.menuExpanded) { ui.menuExpanded = false; ui.pendingMenuFocus[0]?.second?.cancel(); ui.pendingMenuFocus[0] = null; ui.sectionFocusPending = true }
         else if (m.tab == "channel") m.tab = m.channelReturnTab
         else if (m.tab == "server_channels") m.tab = "channels"
-        else if (m.tab == "watch_later") { ui.sectionFocusPending = true; m.tab = "playlists" }
+        else if (m.tab == "watch_later" || m.tab == "user_playlist") { ui.sectionFocusPending = true; m.tab = "playlists" }
         else when (m.exitMode) {
             "single" -> (context as? Activity)?.finish()
             "double" -> {
@@ -240,7 +244,7 @@ import java.util.Locale
         }
     }
     LaunchedEffect(m.tab) {
-        if (m.tab == "playlists" || m.tab == "watch_later") WatchLater.requestSync()
+        if (m.tab == "playlists" || m.tab == "watch_later" || m.tab == "user_playlist") WatchLater.requestSync()
         if (m.tab == "history") m.loadHistory()
         if (m.tab == "live") {
             m.loadLive()

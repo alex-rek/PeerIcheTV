@@ -9,11 +9,10 @@
     <string name="language">इंटरफ़ेस भाषा</string><string name="language_auto">स्वचालित (सिस्टम भाषा)</string><string name="country_label">देश</string><string name="country_default">डिफ़ॉल्ट क्रम</string><string name="settings_language_country">भाषा / देश</string><string name="settings_search">खोज</string>
     <string name="search_videos">वीडियो खोजें</string><string name="search_peertube">PeerTube खोजें</string><string name="search">खोजें</string><string name="voice_prompt">PeerTube खोज के लिए बोलें</string><string name="voice_unavailable">इस डिवाइस पर वाक् पहचान सेवा उपलब्ध नहीं है।</string>
     <string name="directory_title">उपलब्ध PeerTube सर्वर</string><string name="directory_help">इसे सक्रिय करने के लिए सर्वर चुनें।</string><string name="instances_load_more">और सर्वर लोड करें (%1$d / %2$d)</string><string name="videos_count">वीडियो: %1$s · पंजीकरण: %2$s</string><string name="signup_open">खुला</string><string name="signup_closed">बंद/अज्ञात</string>
-    <string name="recommendations_help">देखने के इतिहास पर आधारित मिलते-जुलते वीडियो</string><string name="recommendations_empty">सुझाव पाने के लिए कुछ वीडियो देखें।</string><string name="hide_watched_recommendations">देखे गए वीडियो सुझावों से छिपाएँ</string><string name="video_views">%1$s बार देखा गया</string><string name="subscribe">सदस्यता लें</string><string name="unsubscribe">सदस्यता छोड़ें</string><string name="subscriptions_help">आपके सदस्यता वाले चैनलों के नए वीडियो</string><string name="subscriptions_empty">वीडियो कार्ड से किसी चैनल की सदस्यता लें।</string><string name="channels_title">सदस्यता वाले चैनल</string><string name="channels_empty">कोई सदस्यता वाला चैनल नहीं है।</string><string name="channel_name_header">चैनल</string><string name="channel_server_header">सर्वर</string><string name="channel_action_header">कार्रवाई</string><string name="server_unknown">सर्वर निर्दिष्ट नहीं है</string>
+    <string name="recommendations_help">देखने के इतिहास पर आधारित मिलते-जुलते वीडियो</string><string name="recommendations_empty">सुझाव पाने के लिए कुछ वीडियो देखें।</string><string name="video_views">%1$s बार देखा गया</string><string name="subscribe">सदस्यता लें</string><string name="unsubscribe">सदस्यता छोड़ें</string><string name="subscriptions_help">आपके सदस्यता वाले चैनलों के नए वीडियो</string><string name="subscriptions_empty">वीडियो कार्ड से किसी चैनल की सदस्यता लें।</string><string name="channels_title">सदस्यता वाले चैनल</string><string name="channels_empty">कोई सदस्यता वाला चैनल नहीं है।</string><string name="channel_name_header">चैनल</string><string name="channel_server_header">सर्वर</string><string name="channel_action_header">कार्रवाई</string><string name="server_unknown">सर्वर निर्दिष्ट नहीं है</string>
     <string name="shelf_recommended">सुझाए गए</string><string name="shelf_latest">नए वीडियो</string><string name="shelf_date_unknown">तारीख अज्ञात</string><string name="player_loading">वीडियो स्ट्रीम प्राप्त की जा रही है…</string><string name="player_subtitles">उपशीर्षक</string><string name="player_no_url">सर्वर ने वीडियो लिंक नहीं दिया। कोई अन्य वीडियो या सर्वर आज़माएँ।</string><string name="error_request">अनुरोध त्रुटि</string>
     <string name="error_live">लाइव प्रसारण लोड नहीं हो सके: %1$s</string><string name="settings_server">PeerTube सर्वर</string><string name="server_hint">https://peertube.example</string><string name="server_help">v1 API वाला कोई भी सार्वजनिक PeerTube सर्वर समर्थित है।</string><string name="player_clock_backdrop_medium">मध्यम</string><string name="add_favorite">पसंदीदा में जोड़ें</string><string name="remove_favorite">पसंदीदा से हटाएँ</string><string name="video_play">चलाएँ</string><string name="open_channel">चैनल के वीडियो खोलें</string><string name="language_russian">रूसी</string><string name="language_english">अंग्रेज़ी</string><string name="language_spanish">स्पेनिश</string><string name="voice_search">🎙</string><string name="directory_filter">नाम या पते से फ़िल्टर करें</string><string name="channel_unknown">PeerTube</string><string name="subscriptions_no_videos">मिलते-जुलते वीडियो नहीं मिले। बाद में फिर कोशिश करें।</string><string name="error_subscriptions">सदस्यताएँ लोड नहीं हो सकीं: %1$s</string><string name="video_published">प्रकाशित: %1$s</string><string name="shelf_video_stats">%1$s बार देखा गया · %2$s</string><string name="player_missing_context">सर्वर या वीडियो ID नहीं मिल सकी। फ़ीड पर लौटें और वीडियो फिर से खोलें।</string><string name="player_missing_video">PeerTube ने समर्थित वीडियो फ़ाइल नहीं लौटाई।</string><string name="player_fetch_error">सर्वर से वीडियो नहीं मिल सका: %1$s</string><string name="player_playback_error">वीडियो नहीं चल सका: %1$s</string><string name="error_server">PeerTube लोड नहीं हो सका: %1$s</string><string name="error_sepia">Sepia खोज उपलब्ध नहीं है: %1$s</string><string name="error_directory">सर्वर निर्देशिका उपलब्ध नहीं है: %1$s</string><string name="error_recommendations">सुझाव नहीं बनाए जा सके: %1$s</string>
-    <string name="channel_video_count">वीडियो: %1$s</string><string name="context_menu_hold_duration">संदर्भ मेनू के लिए दबाए रखने की अवधि</string>
-    <string name="watched_threshold_never">कभी नहीं</string>
+    <string name="channel_video_count">वीडियो: %1$s</string><string name="context_menu_hold_duration">संदर्भ मेनू के लिए दबाए रखने की अवधि</string>
     <string name="watched_threshold_minute">1 मिनट</string>
     <string name="watched_threshold_three_minutes">3 मिनट</string>
     <string name="watched_threshold_half">आधा</string>
@@ -87,11 +86,7 @@
     <string name="search_sensitive_show">सामान्य रूप से दिखाएँ</string>
     <string name="search_sensitive_warning_badge">संवेदनशील वीडियो</string>
     <string name="search_empty">कोई वीडियो नहीं मिला। खोज या फ़िल्टर बदलकर देखें।</string>
-    <string name="server_channels_empty">इस सर्वर पर कोई सार्वजनिक चैनल नहीं है।</string>
-    <string name="watched_threshold_5_percent">5%</string>
-    <string name="watched_threshold_10_percent">10%</string>
-    <string name="watched_threshold_50_percent">50%</string>
-    <string name="watched_threshold_100_percent">100%</string>
+    <string name="server_channels_empty">इस सर्वर पर कोई सार्वजनिक चैनल नहीं है।</string>
     <string name="backup_saved">बैकअप %1$s में सहेजा गया</string>
     <string name="tv_recommendations_channel">PeerIcheTV सुझाव</string>
     <string name="player_quality_title">प्लेबैक गुणवत्ता</string>
@@ -370,4 +365,20 @@
     <string name="search_method_move_up">ऊपर ले जाएँ</string>
     <string name="search_method_move_down">नीचे ले जाएँ</string>
     <string name="discovery_refresh_days">%1$d दिन</string>
+    <string name="home_languages">होम पर वीडियो की भाषा</string>
+    <string name="home_languages_any">कोई भी भाषा</string>
+    <string name="home_languages_interface">इंटरफ़ेस जैसी</string>
+    <string name="home_languages_hint">इन भाषाओं के वीडियो पहले दिखते हैं। सर्वर पर कम हों तो होम दूसरे वीडियो से भरा जाता है।</string>
+    <string name="home_interests_everywhere">सभी PeerTube सर्वरों पर खोजें</string>
+    <string name="home_interests_everywhere_summary">Sepia Search से दूसरे सर्वरों के इन श्रेणियों के वीडियो जोड़ता है, हर सर्वर से अधिकतम तीन।</string>
+    <string name="history_remove">इतिहास से हटाएँ</string>
+    <string name="playlist_new">नई प्लेलिस्ट</string>
+    <string name="playlist_name">प्लेलिस्ट का नाम</string>
+    <string name="playlist_create">बनाएँ</string>
+    <string name="playlist_add">प्लेलिस्ट में जोड़ें…</string>
+    <string name="playlist_delete">प्लेलिस्ट हटाएँ</string>
+    <string name="playlist_delete_confirm">प्लेलिस्ट “%1$s” हटाएँ?</string>
+    <string name="playlist_delete_synced">यह आपके PeerTube खाते से भी हट जाएगी।</string>
+    <string name="playlist_empty">इस प्लेलिस्ट में अभी कोई वीडियो नहीं है। वीडियो के मेनू से जोड़ें।</string>
+    <string name="playlist_missing">यह प्लेलिस्ट अब मौजूद नहीं है।</string>
 </resources>

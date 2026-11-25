@@ -187,6 +187,7 @@ internal fun SettingsDashboard(
                     val panelTitle = when (selectedSubpage) {
                         "language" -> R.string.language
                         "country" -> R.string.country_label
+                        "home_languages" -> R.string.home_languages
                         else -> categories.firstOrNull { it.first == selectedCategory }?.second ?: R.string.settings_general
                     }
                     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -276,6 +277,25 @@ internal fun SettingsDashboard(
                                 }
                             }
                         }
+                    } else if (selectedSubpage == "home_languages") {
+                        val selectedLanguages = model.homeVideoLanguages
+                        fun toggleLanguage(code: String) = model.updateHomeVideoLanguages(if (code in selectedLanguages) selectedLanguages - code else selectedLanguages + code)
+                        val languageChoices = listOf(INTERFACE_VIDEO_LANGUAGE to stringResource(R.string.home_languages_interface)) + homeVideoLanguageCodes.map { it to videoLanguageName(it) }
+                        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            item { Text(stringResource(R.string.home_languages_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp)) }
+                            item(key = "any") {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(stringResource(R.string.home_languages_any), Modifier.weight(1f))
+                                    Checkbox(checked = selectedLanguages.isEmpty(), onCheckedChange = { model.updateHomeVideoLanguages(emptyList()) })
+                                }
+                            }
+                            items(languageChoices, key = { it.first }) { (code, label) ->
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(label, Modifier.weight(1f))
+                                    Checkbox(checked = code in selectedLanguages, onCheckedChange = { toggleLanguage(code) })
+                                }
+                            }
+                        }
                     } else if (selectedSubpage == "country") {
                         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             item {
@@ -339,8 +359,24 @@ internal fun SettingsDashboard(
                                     "server" to stringResource(R.string.home_mode_server),
                                     "channel" to stringResource(R.string.home_mode_channel)
                                 )) { model.updateHomePageDisplayMode(it) }
+                                if (model.homePageDisplayMode != "channel") {
+                                    Text(stringResource(R.string.home_languages), style = MaterialTheme.typography.titleMedium)
+                                    val interfaceLabel = stringResource(R.string.home_languages_interface)
+                                    val languagesSummary = if (model.homeVideoLanguages.isEmpty()) stringResource(R.string.home_languages_any)
+                                        else model.homeVideoLanguages.joinToString(", ") { if (it == INTERFACE_VIDEO_LANGUAGE) interfaceLabel else videoLanguageName(it) }
+                                    OutlinedButton(onClick = { onSelectSubpage("home_languages") }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(languagesSummary, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                    }
+                                }
                                 when (model.homePageDisplayMode) {
                                     "interests" -> {
+                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(stringResource(R.string.home_interests_everywhere))
+                                                Text(stringResource(R.string.home_interests_everywhere_summary), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                            Switch(model.homeInterestsEverywhere, model::updateHomeInterestsEverywhere)
+                                        }
                                         Text(stringResource(R.string.home_interests_help), style = MaterialTheme.typography.bodySmall)
                                         val labels = listOf(
                                             R.string.home_interest_music, R.string.home_interest_films, R.string.home_interest_vehicles,
@@ -416,20 +452,6 @@ internal fun SettingsDashboard(
                                         seconds.toString() to "${String.format(Locale.ROOT, "%.1f", seconds).removeSuffix(".0")} ${stringResource(R.string.seconds_short)}"
                                     }
                                 ) { model.updateContextMenuHoldSeconds(it.toFloat()) }
-                                val watchedThresholdLabel = stringResource(when (model.watchedRecommendationThreshold) {
-                                    "percent_5" -> R.string.watched_threshold_5_percent
-                                    "percent_10" -> R.string.watched_threshold_10_percent
-                                    "percent_50" -> R.string.watched_threshold_50_percent
-                                    "complete" -> R.string.watched_threshold_100_percent
-                                    else -> R.string.watched_threshold_never
-                                })
-                                SettingsChoice(stringResource(R.string.hide_watched_recommendations), watchedThresholdLabel, listOf(
-                                    "never" to stringResource(R.string.watched_threshold_never),
-                                    "percent_5" to stringResource(R.string.watched_threshold_5_percent),
-                                    "percent_10" to stringResource(R.string.watched_threshold_10_percent),
-                                    "percent_50" to stringResource(R.string.watched_threshold_50_percent),
-                                    "complete" to stringResource(R.string.watched_threshold_100_percent)
-                                )) { model.updateWatchedRecommendationThreshold(it) }
                                 val recommendationBasisLabel = stringResource(when (model.recommendationBasis) {
                                     "subscriptions" -> R.string.recommendations_basis_subscriptions
                                     "both" -> R.string.recommendations_basis_both

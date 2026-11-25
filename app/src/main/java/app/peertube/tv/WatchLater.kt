@@ -104,6 +104,7 @@ internal object WatchLater {
         store = WatchLaterStore(appContext)
         val manager = PeerTubeAccounts.get(appContext)
         accounts = manager
+        Playlists.attach(appContext, manager)
         scope.launch { for (ignored in syncRequests) { delay(800); runSync() } }
         scope.launch {
             runCatching { manager.initialize() }
@@ -113,7 +114,7 @@ internal object WatchLater {
                 val ids = accountsState.accounts.mapTo(HashSet()) { it.id }
                 knownIds?.minus(ids)?.forEach(::forgetSignedOutAccount)
                 knownIds = ids
-                accountsState.active?.takeUnless { it.needsLogin }?.let { moveGuestListTo(it.id) }
+                accountsState.active?.takeUnless { it.needsLogin }?.let { moveGuestListTo(it.id); Playlists.moveGuestTo(it.id) }
                 lastSyncFailed = false
                 publish()
                 requestSync()
@@ -157,6 +158,7 @@ internal object WatchLater {
     private fun forgetSignedOutAccount(accountId: String) {
         rejectedByAccount.remove(accountId)
         store?.update(accountId) { if (it.pendingChanges == 0) WatchLaterList() else it }
+        Playlists.forget(accountId)
     }
 
     private suspend fun runSync() {
@@ -175,9 +177,14 @@ internal object WatchLater {
             true
         }
         publish()
+        // Ordinary playlists follow in the same pass, so they share every trigger of "Watch later".
+        Playlists.publish(syncing = true)
+        Playlists.sync(account.id)
+        Playlists.publish()
     }
 
     private fun publish(syncing: Boolean = false) {
+        Playlists.publish()
         val target = store ?: return
         val accountsState = accounts?.state?.value ?: return
         val account = accountsState.active

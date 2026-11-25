@@ -9,11 +9,10 @@
     <string name="language">Oberflächensprache</string><string name="language_auto">Automatisch (Systemsprache)</string><string name="country_label">Land</string><string name="country_default">Standardreihenfolge</string><string name="settings_language_country">Sprache / Land</string><string name="settings_search">Suche</string>
     <string name="search_videos">Videos suchen</string><string name="search_peertube">PeerTube durchsuchen</string><string name="search">Suchen</string><string name="voice_prompt">Sprich eine PeerTube-Suchanfrage</string><string name="voice_unavailable">Auf diesem Gerät ist kein Spracherkennungsdienst verfügbar.</string>
     <string name="directory_title">Verfügbare PeerTube-Server</string><string name="directory_help">Wähle einen Server aus, um ihn zu aktivieren.</string><string name="instances_load_more">Weitere Server laden (%1$d von %2$d)</string><string name="videos_count">Videos: %1$s · Registrierung: %2$s</string><string name="signup_open">offen</string><string name="signup_closed">geschlossen/unbekannt</string>
-    <string name="recommendations_help">Ähnliche Videos basierend auf deinem Verlauf</string><string name="recommendations_empty">Sieh dir ein paar Videos an, um Empfehlungen zu erhalten.</string><string name="hide_watched_recommendations">Angesehene Videos aus Empfehlungen ausblenden</string><string name="video_views">%1$s Aufrufe</string><string name="subscribe">Abonnieren</string><string name="unsubscribe">Abonnement beenden</string><string name="subscriptions_help">Neueste Videos deiner abonnierten Kanäle</string><string name="subscriptions_empty">Abonniere einen Kanal über eine Videokarte.</string><string name="channels_title">Abonnierte Kanäle</string><string name="channels_empty">Keine abonnierten Kanäle vorhanden.</string><string name="channel_name_header">Kanal</string><string name="channel_server_header">Server</string><string name="channel_action_header">Aktion</string><string name="server_unknown">Server nicht angegeben</string>
+    <string name="recommendations_help">Ähnliche Videos basierend auf deinem Verlauf</string><string name="recommendations_empty">Sieh dir ein paar Videos an, um Empfehlungen zu erhalten.</string><string name="video_views">%1$s Aufrufe</string><string name="subscribe">Abonnieren</string><string name="unsubscribe">Abonnement beenden</string><string name="subscriptions_help">Neueste Videos deiner abonnierten Kanäle</string><string name="subscriptions_empty">Abonniere einen Kanal über eine Videokarte.</string><string name="channels_title">Abonnierte Kanäle</string><string name="channels_empty">Keine abonnierten Kanäle vorhanden.</string><string name="channel_name_header">Kanal</string><string name="channel_server_header">Server</string><string name="channel_action_header">Aktion</string><string name="server_unknown">Server nicht angegeben</string>
     <string name="shelf_recommended">Empfohlen</string><string name="shelf_latest">Neueste Videos</string><string name="shelf_date_unknown">Datum unbekannt</string><string name="player_loading">Videostream wird geladen…</string><string name="player_subtitles">Untertitel</string><string name="player_no_url">Der Server hat keinen Videolink bereitgestellt. Versuche ein anderes Video oder einen anderen Server.</string><string name="error_request">Anfragefehler</string>
     <string name="error_live">Live-Streams konnten nicht geladen werden: %1$s</string><string name="settings_server">PeerTube-Server</string><string name="server_hint">https://peertube.example</string><string name="server_help">Jeder öffentliche PeerTube-Server mit API v1 wird unterstützt.</string><string name="player_clock_backdrop_medium">Mittel</string><string name="add_favorite">Zu Favoriten hinzufügen</string><string name="remove_favorite">Aus Favoriten entfernen</string><string name="video_play">Wiedergabe</string><string name="open_channel">Kanalvideos öffnen</string><string name="language_russian">Russisch</string><string name="language_english">Englisch</string><string name="language_spanish">Spanisch</string><string name="voice_search">🎙</string><string name="directory_filter">Nach Name oder Adresse filtern</string><string name="channel_unknown">PeerTube</string><string name="subscriptions_no_videos">Keine passenden Videos gefunden. Versuche es später erneut.</string><string name="error_subscriptions">Abonnements konnten nicht geladen werden: %1$s</string><string name="video_published">Veröffentlicht: %1$s</string><string name="shelf_video_stats">%1$s Aufrufe · %2$s</string><string name="player_missing_context">Server oder Video-ID konnte nicht ermittelt werden. Kehre zum Feed zurück und öffne das Video erneut.</string><string name="player_missing_video">PeerTube hat keine unterstützte Videodatei zurückgegeben.</string><string name="player_fetch_error">Video konnte nicht vom Server abgerufen werden: %1$s</string><string name="player_playback_error">Video konnte nicht abgespielt werden: %1$s</string><string name="error_server">PeerTube konnte nicht geladen werden: %1$s</string><string name="error_sepia">Sepia-Suche ist nicht verfügbar: %1$s</string><string name="error_directory">Serververzeichnis ist nicht verfügbar: %1$s</string><string name="error_recommendations">Empfehlungen konnten nicht erstellt werden: %1$s</string>
-    <string name="channel_video_count">Videos: %1$s</string><string name="context_menu_hold_duration">Haltezeit für das Kontextmenü</string>
-    <string name="watched_threshold_never">Nie</string>
+    <string name="channel_video_count">Videos: %1$s</string><string name="context_menu_hold_duration">Haltezeit für das Kontextmenü</string>
     <string name="watched_threshold_minute">1 Minute</string>
     <string name="watched_threshold_three_minutes">3 Minuten</string>
     <string name="watched_threshold_half">Die Hälfte</string>
@@ -87,11 +86,7 @@
     <string name="search_sensitive_show">Normal anzeigen</string>
     <string name="search_sensitive_warning_badge">Sensibles Video</string>
     <string name="search_empty">Keine Videos gefunden. Ändere die Suche oder die Filter.</string>
-    <string name="server_channels_empty">Dieser Server hat keine öffentlichen Kanäle.</string>
-    <string name="watched_threshold_5_percent">5%</string>
-    <string name="watched_threshold_10_percent">10%</string>
-    <string name="watched_threshold_50_percent">50%</string>
-    <string name="watched_threshold_100_percent">100%</string>
+    <string name="server_channels_empty">Dieser Server hat keine öffentlichen Kanäle.</string>
     <string name="backup_saved">Sicherung gespeichert unter %1$s</string>
     <string name="tv_recommendations_channel">PeerIcheTV-Empfehlungen</string>
     <string name="player_quality_title">Wiedergabequalität</string>
@@ -370,4 +365,20 @@
     <string name="search_method_move_up">Nach oben</string>
     <string name="search_method_move_down">Nach unten</string>
     <string name="discovery_refresh_days">%1$d Tg.</string>
+    <string name="home_languages">Videosprache auf der Startseite</string>
+    <string name="home_languages_any">Beliebige Sprache</string>
+    <string name="home_languages_interface">Wie die App-Sprache</string>
+    <string name="home_languages_hint">Videos in diesen Sprachen werden zuerst angezeigt. Hat der Server nur wenige davon, wird die Startseite mit anderen Videos aufgefüllt.</string>
+    <string name="home_interests_everywhere">Auf allen PeerTube-Servern suchen</string>
+    <string name="home_interests_everywhere_summary">Fügt Videos dieser Kategorien von anderen Servern über Sepia Search hinzu, höchstens drei pro Server.</string>
+    <string name="history_remove">Aus dem Verlauf entfernen</string>
+    <string name="playlist_new">Neue Playlist</string>
+    <string name="playlist_name">Name der Playlist</string>
+    <string name="playlist_create">Erstellen</string>
+    <string name="playlist_add">Zur Playlist…</string>
+    <string name="playlist_delete">Playlist löschen</string>
+    <string name="playlist_delete_confirm">Playlist „%1$s“ löschen?</string>
+    <string name="playlist_delete_synced">Sie wird auch aus deinem PeerTube-Konto gelöscht.</string>
+    <string name="playlist_empty">Noch keine Videos in dieser Playlist. Füge sie über das Videomenü hinzu.</string>
+    <string name="playlist_missing">Diese Playlist gibt es nicht mehr.</string>
 </resources>
