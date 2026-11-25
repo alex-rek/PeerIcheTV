@@ -88,6 +88,8 @@ internal fun validSubscriptionHandle(value: String): String {
 private const val WATCH_LATER_PLAYLIST_TYPE = 2
 private const val PLAYLIST_PAGE_SIZE = 50
 private const val MAX_PLAYLIST_PAGES = 200
+private const val REGULAR_PLAYLIST_TYPE = 1
+private const val PRIVATE_PLAYLIST_PRIVACY = 3
 
 private class PeerTubeAccountTransport(private val client: () -> OkHttpClient) {
     private val gson = Gson()
@@ -243,6 +245,22 @@ private class PeerTubeAccountTransport(private val client: () -> OkHttpClient) {
     }
     suspend fun removePlaylistElement(server: String, token: String, playlistId: Long, elementId: Long) {
         execute(request(server, "/api/v1/video-playlists/$playlistId/videos/$elementId", token).delete().build(), empty = true)
+    }
+    /** One page of the account's regular playlists (private ones included for the owner). */
+    suspend fun regularPlaylists(server: String, token: String, username: String, start: Int): JsonObject =
+        execute(request(server, "/api/v1/accounts/${android.net.Uri.encode(username)}/video-playlists?playlistType=$REGULAR_PLAYLIST_TYPE&start=${start.coerceAtLeast(0)}&count=100", token).build())
+    /** Private playlists need no channel and are never shown to anyone else. */
+    suspend fun createPrivatePlaylist(server: String, token: String, name: String): Long {
+        val title = name.trim()
+        if (title.length !in 1..120) throw AccountAuthFailure("invalid_playlist")
+        val body = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("displayName", title).addFormDataPart("privacy", PRIVATE_PLAYLIST_PRIVACY.toString()).build()
+        val json = execute(request(server, "/api/v1/video-playlists", token).post(body).build())
+        return runCatching { json.getAsJsonObject("videoPlaylist").get("id").asLong }.getOrNull()?.takeIf { it > 0 }
+            ?: throw AccountAuthFailure("invalid_response")
+    }
+    suspend fun deletePlaylist(server: String, token: String, playlistId: Long) {
+        execute(request(server, "/api/v1/video-playlists/$playlistId", token).delete().build(), empty = true)
     }
     /** Makes a video from another instance known to the account's server by searching for its URL. */
     suspend fun importRemoteVideo(server: String, token: String, videoUrl: String) {
@@ -413,6 +431,33 @@ internal class PeerTubeAccountManager(context: Context) {
         val video = runCatching { PeerTubeGson.instance.fromJson(json, Video::class.java) }.getOrNull()?.takeIf { !it.uuid.isNullOrBlank() } ?: return null
         val host = video.host?.takeIf(String::isNotBlank) ?: video.channel?.host ?: video.account?.host ?: URI(server).authority
         return RemoteWatchLaterItem(video.copy(host = host), elementId)
+    }
+    /** Every regular playlist of the account, or a failure: a partial list would look like playlists deleted on the server. */
+    suspend fun regularPlaylists(id: String): List<RemotePlaylist> {
+        val result = ArrayList<RemotePlaylist>()
+        var start = 0
+        repeat(MAX_PLAYLIST_PAGES) {
+            val page = withAccountToken(id) { api.regularPlaylists(it.server, it.access, it.profile.username, start) }
+            val rows = page.getAsJsonArray("data") ?: throw AccountAuthFailure("invalid_response")
+            rows.forEach { element ->
+                val json = element.asJsonObject
+                val playlistId = runCatching { json.get("id").asLong }.getOrNull()?.takeIf { it > 0 } ?: throw AccountAuthFailure("invalid_response")
+                val type = runCatching { json.getAsJsonObject("type").get("id").asInt }.getOrDefault(REGULAR_PLAYLIST_TYPE)
+                val name = runCatching { json.get("displayName").asString }.getOrNull().orEmpty().trim()
+                if (type == REGULAR_PLAYLIST_TYPE && name.isNotEmpty()) result += RemotePlaylist(playlistId, name)
+            }
+            start += rows.size()
+            val total = runCatching { page.get("total").asInt }.getOrNull() ?: throw AccountAuthFailure("invalid_response")
+            if (start >= total) return result
+            if (rows.size() == 0) throw AccountAuthFailure("invalid_response")
+        }
+        throw AccountAuthFailure("invalid_response")
+    }
+    suspend fun createPlaylist(id: String, name: String): Long = withAccountToken(id) { api.createPrivatePlaylist(it.server, it.access, name) }
+    /** A 404 means the playlist is already gone, which is what was asked for. */
+    suspend fun deletePlaylist(id: String, playlistId: Long) = withAccountToken(id) { session ->
+        try { api.deletePlaylist(session.server, session.access, playlistId) }
+        catch (failure: AccountAuthFailure) { if (failure.status != 404) throw failure }
     }
     /** Returns null when the server cannot take this video, so it is kept on this device only. */
     suspend fun addToPlaylist(id: String, playlistId: Long, video: Video): Long? = withAccountToken(id) { session ->

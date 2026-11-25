@@ -377,4 +377,13 @@
     <string name="home_interests_everywhere">सभी PeerTube सर्वरों पर खोजें</string>
     <string name="home_interests_everywhere_summary">Sepia Search से दूसरे सर्वरों के इन श्रेणियों के वीडियो जोड़ता है, हर सर्वर से अधिकतम तीन।</string>
     <string name="history_remove">इतिहास से हटाएँ</string>
+    <string name="playlist_new">नई प्लेलिस्ट</string>
+    <string name="playlist_name">प्लेलिस्ट का नाम</string>
+    <string name="playlist_create">बनाएँ</string>
+    <string name="playlist_add">प्लेलिस्ट में जोड़ें…</string>
+    <string name="playlist_delete">प्लेलिस्ट हटाएँ</string>
+    <string name="playlist_delete_confirm">प्लेलिस्ट “%1$s” हटाएँ?</string>
+    <string name="playlist_delete_synced">यह आपके PeerTube खाते से भी हट जाएगी।</string>
+    <string name="playlist_empty">इस प्लेलिस्ट में अभी कोई वीडियो नहीं है। वीडियो के मेनू से जोड़ें।</string>
+    <string name="playlist_missing">यह प्लेलिस्ट अब मौजूद नहीं है।</string>
 </resources>

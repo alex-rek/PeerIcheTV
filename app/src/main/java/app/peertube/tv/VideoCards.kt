@@ -126,6 +126,7 @@ internal fun VideoContextMenu(
     val title = video.name
     val context = LocalContext.current
     val watchLater by WatchLater.state.collectAsState()
+    var playlistPicker by remember { mutableStateOf(false) }
     val initialMenuFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { initialMenuFocus.requestFocus() } }
     Dialog(
@@ -161,6 +162,9 @@ internal fun VideoContextMenu(
                         TextButton(onClick = { WatchLater.toggle(context, video); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(if (video.uuid in watchLater) R.string.watch_later_remove else R.string.watch_later_add), modifier = Modifier.fillMaxWidth())
                         }
+                        TextButton(onClick = { playlistPicker = true }, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.playlist_add), modifier = Modifier.fillMaxWidth())
+                        }
                         TextButton(onClick = onChannel, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.open_channel), modifier = Modifier.fillMaxWidth())
                         }
@@ -181,6 +185,7 @@ internal fun VideoContextMenu(
             }
         }
     }
+    if (playlistPicker) PlaylistPickerDialog(video) { playlistPicker = false; onDismiss() }
 }
 
 @Composable internal fun VideoThumbnail(video: Video, server: String, modifier: Modifier = Modifier, progress: Float = 0f) {

@@ -247,4 +247,13 @@
     <string name="home_interests_everywhere">Искать на всех серверах PeerTube</string>
     <string name="home_interests_everywhere_summary">Добавляет видео этих категорий с других серверов через Sepia Search, не больше трёх с одного сервера.</string>
     <string name="history_remove">Удалить из истории</string>
+    <string name="playlist_new">Новый плейлист</string>
+    <string name="playlist_name">Название плейлиста</string>
+    <string name="playlist_create">Создать</string>
+    <string name="playlist_add">В плейлист…</string>
+    <string name="playlist_delete">Удалить плейлист</string>
+    <string name="playlist_delete_confirm">Удалить плейлист «%1$s»?</string>
+    <string name="playlist_delete_synced">Он будет удалён и из аккаунта PeerTube.</string>
+    <string name="playlist_empty">В плейлисте пока нет видео. Добавьте их из меню видео.</string>
+    <string name="playlist_missing">Этого плейлиста больше нет.</string>
 </resources>

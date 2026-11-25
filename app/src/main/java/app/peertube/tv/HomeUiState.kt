@@ -36,6 +36,8 @@ internal class HomeUiState {
     var returnSearchFocusPending by mutableStateOf(false)
     var searchButtonFocused by mutableStateOf(false)
     var accountButtonFocused by mutableStateOf(false)
+    /** The user playlist shown in the "user_playlist" tab. */
+    var openedPlaylistId by mutableStateOf<String?>(null)
     var menuExpanded by mutableStateOf(false)
     var headerHidden by mutableStateOf(false)
     var settingsOverlay by mutableStateOf(false)

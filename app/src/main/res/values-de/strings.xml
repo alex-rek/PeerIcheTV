@@ -377,4 +377,13 @@
     <string name="home_interests_everywhere">Auf allen PeerTube-Servern suchen</string>
     <string name="home_interests_everywhere_summary">Fügt Videos dieser Kategorien von anderen Servern über Sepia Search hinzu, höchstens drei pro Server.</string>
     <string name="history_remove">Aus dem Verlauf entfernen</string>
+    <string name="playlist_new">Neue Playlist</string>
+    <string name="playlist_name">Name der Playlist</string>
+    <string name="playlist_create">Erstellen</string>
+    <string name="playlist_add">Zur Playlist…</string>
+    <string name="playlist_delete">Playlist löschen</string>
+    <string name="playlist_delete_confirm">Playlist „%1$s“ löschen?</string>
+    <string name="playlist_delete_synced">Sie wird auch aus deinem PeerTube-Konto gelöscht.</string>
+    <string name="playlist_empty">Noch keine Videos in dieser Playlist. Füge sie über das Videomenü hinzu.</string>
+    <string name="playlist_missing">Diese Playlist gibt es nicht mehr.</string>
 </resources>

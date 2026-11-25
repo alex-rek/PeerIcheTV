@@ -377,4 +377,13 @@
     <string name="home_interests_everywhere">البحث في جميع خوادم PeerTube</string>
     <string name="home_interests_everywhere_summary">يضيف فيديوهات من هذه الفئات من خوادم أخرى عبر Sepia Search، ثلاثة على الأكثر من كل خادم.</string>
     <string name="history_remove">إزالة من السجل</string>
+    <string name="playlist_new">قائمة تشغيل جديدة</string>
+    <string name="playlist_name">اسم قائمة التشغيل</string>
+    <string name="playlist_create">إنشاء</string>
+    <string name="playlist_add">إضافة إلى قائمة تشغيل…</string>
+    <string name="playlist_delete">حذف قائمة التشغيل</string>
+    <string name="playlist_delete_confirm">حذف قائمة التشغيل «%1$s»؟</string>
+    <string name="playlist_delete_synced">ستُحذف أيضًا من حسابك على PeerTube.</string>
+    <string name="playlist_empty">لا توجد فيديوهات في هذه القائمة بعد. أضفها من قائمة الفيديو.</string>
+    <string name="playlist_missing">لم تعد قائمة التشغيل هذه موجودة.</string>
 </resources>

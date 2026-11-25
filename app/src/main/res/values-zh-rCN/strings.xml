@@ -377,4 +377,13 @@
     <string name="home_interests_everywhere">在所有 PeerTube 服务器上搜索</string>
     <string name="home_interests_everywhere_summary">通过 Sepia Search 添加其他服务器上这些类别的视频，每个服务器最多三个。</string>
     <string name="history_remove">从历史记录中移除</string>
+    <string name="playlist_new">新建播放列表</string>
+    <string name="playlist_name">播放列表名称</string>
+    <string name="playlist_create">创建</string>
+    <string name="playlist_add">添加到播放列表…</string>
+    <string name="playlist_delete">删除播放列表</string>
+    <string name="playlist_delete_confirm">删除播放列表“%1$s”？</string>
+    <string name="playlist_delete_synced">它也会从你的 PeerTube 账号中删除。</string>
+    <string name="playlist_empty">此播放列表中还没有视频。可从视频菜单添加。</string>
+    <string name="playlist_missing">此播放列表已不存在。</string>
 </resources>

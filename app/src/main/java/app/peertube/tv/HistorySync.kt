@@ -1,6 +1,7 @@
 package app.peertube.tv
 
 import android.content.Context
+import androidx.core.content.edit
 
 /** How server history (newest first) enters the local list. Keys are lower-case video UUIDs. */
 internal data class HistoryImport(
@@ -54,26 +55,28 @@ internal object HistorySyncState {
 
     @Synchronized fun queueRemoval(context: Context, account: String, uuids: Collection<String>) {
         if (uuids.isEmpty()) return
-        prefs(context).edit().putStringSet(removalsKey(account), removals(context, account) + uuids.map { it.lowercase() }).apply()
+        prefs(context).edit { putStringSet(removalsKey(account), removals(context, account) + uuids.map { it.lowercase() }) }
     }
     @Synchronized fun removalSent(context: Context, account: String, uuid: String) {
-        prefs(context).edit().putStringSet(removalsKey(account), removals(context, account) - uuid).apply()
+        prefs(context).edit { putStringSet(removalsKey(account), removals(context, account) - uuid) }
     }
     /** A clear replaces pending removals and forgets the order mark. */
     @Synchronized fun queueClear(context: Context, account: String, at: Long) {
-        prefs(context).edit().putLong(clearKey(account), at).remove(removalsKey(account)).remove(newestKey(account)).apply()
+        prefs(context).edit { putLong(clearKey(account), at).remove(removalsKey(account)).remove(newestKey(account)) }
     }
     @Synchronized fun clearSent(context: Context, account: String, at: Long) {
-        if (clearRequestedAt(context, account) == at) prefs(context).edit().remove(clearKey(account)).apply()
+        if (clearRequestedAt(context, account) == at) prefs(context).edit { remove(clearKey(account)) }
     }
     /** A view sent from here is the newest server entry, so it is not mistaken for another device's. */
     @Synchronized fun noteView(context: Context, account: String, uuid: String) {
         val key = uuid.lowercase()
-        prefs(context).edit().putString(newestKey(account), key).putStringSet(seenKey(account), seen(context, account) + key).apply()
+        prefs(context).edit { putString(newestKey(account), key).putStringSet(seenKey(account), seen(context, account) + key) }
     }
     @Synchronized fun savePass(context: Context, account: String, newest: String?, seen: Set<String>) {
-        prefs(context).edit().apply { if (newest == null) remove(newestKey(account)) else putString(newestKey(account), newest) }
-            .putStringSet(seenKey(account), seen).apply()
+        prefs(context).edit {
+            if (newest == null) remove(newestKey(account)) else putString(newestKey(account), newest)
+            putStringSet(seenKey(account), seen)
+        }
     }
 }
 
