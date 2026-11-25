@@ -15,7 +15,7 @@ if (hasAnyReleaseSigningValue && !hasAllReleaseSigningValues) {
 android {
     namespace = "app.peertube.tv"
     compileSdk = 37
-    defaultConfig { applicationId = "app.peertube.tv"; minSdk = 23; targetSdk = 36; versionCode = 32; versionName = "1.0.32"; buildConfigField("String", "RELEASE_DATE", "\"2026-11-24\""); testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig { applicationId = "app.peertube.tv"; minSdk = 23; targetSdk = 36; versionCode = 33; versionName = "1.0.33"; buildConfigField("String", "RELEASE_DATE", "\"2026-11-24\""); testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
     buildFeatures {
         compose = true
         buildConfig = true
